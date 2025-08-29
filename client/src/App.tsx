@@ -27,7 +27,6 @@ function App() {
   const [streamingContent, setStreamingContent] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.CARDS);
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
-  const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -49,9 +48,11 @@ function App() {
 
   useEffect(() => {
     const newSocket = io('http://localhost:5000', {
+      transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5
+      reconnectionAttempts: 5,
+      timeout: 20000
     });
     
     newSocket.on('connect', () => {
@@ -77,10 +78,8 @@ function App() {
       setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
       setIsStreaming(false);
       setStreamingContent('');
-      if (data.conversationId && !currentConversationId) {
-        setCurrentConversationId(data.conversationId);
-      }
-      loadConversations();
+      setCurrentConversationId(data.conversationId);
+      // Don't call loadConversations here - it will be triggered by the socket connection
     });
 
     newSocket.on('chat:error', (data: { error: string }) => {
@@ -89,7 +88,7 @@ function App() {
       setStreamingContent('');
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: '⚠️ ' + (data.error || 'Sorry, I encountered an error. Please try again.') 
+        content: 'Sorry, an error occurred. Please try again.' 
       }]);
     });
 
@@ -120,7 +119,7 @@ function App() {
       newSocket.removeAllListeners();
       newSocket.close();
     };
-  }, []);
+  }, []); // Remove loadConversations dependency to prevent infinite loop
 
   const sendMessage = (content: string) => {
     if (!socket || !connected) return;
@@ -165,10 +164,6 @@ function App() {
 
   const handleHomeClick = () => {
     setViewMode(ViewMode.CARDS);
-  };
-
-  const toggleTimeline = () => {
-    setIsTimelineExpanded(!isTimelineExpanded);
   };
 
   useEffect(() => {
@@ -234,8 +229,6 @@ function App() {
           conversations={conversations}
           currentConversationId={currentConversationId}
           onSelectConversation={handleSelectConversation}
-          isExpanded={isTimelineExpanded}
-          onToggleExpanded={toggleTimeline}
         />
       )}
 
