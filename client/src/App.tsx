@@ -3,6 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import Message from './components/Message';
 import ChatInput from './components/ChatInput';
 import TypingIndicator from './components/TypingIndicator';
+import WelcomeScreen from './components/WelcomeScreen';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -23,7 +24,7 @@ function App() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, streamingContent]);
+  }, [messages, streamingContent, isStreaming]);
 
   useEffect(() => {
     const newSocket = io('http://localhost:5000');
@@ -57,6 +58,10 @@ function App() {
       console.error('Chat error:', data.error);
       setIsStreaming(false);
       setStreamingContent('');
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: 'Sorry, I encountered an error. Please try again.' 
+      }]);
     });
 
     setSocket(newSocket);
@@ -77,16 +82,23 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      <header className="bg-white border-b px-4 py-3">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-gray-900">
-            Chat Buddy AI
-          </h1>
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+            </div>
+            <h1 className="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              Chat Buddy AI
+            </h1>
+          </div>
           <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <div className={`w-2 h-2 rounded-full animate-pulse ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
             <span className="text-sm text-gray-600">
-              {connected ? 'Connected' : 'Disconnected'}
+              {connected ? 'Online' : 'Offline'}
             </span>
           </div>
         </div>
@@ -94,25 +106,25 @@ function App() {
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto p-4">
-          {messages.length === 0 && !isStreaming && (
-            <div className="text-center text-gray-500 mt-8">
-              Start a conversation by typing a message below
-            </div>
+          {messages.length === 0 && !isStreaming ? (
+            <WelcomeScreen />
+          ) : (
+            <>
+              {messages.map((msg, index) => (
+                <Message key={index} role={msg.role} content={msg.content} />
+              ))}
+              
+              {isStreaming && !streamingContent && (
+                <TypingIndicator />
+              )}
+              
+              {isStreaming && streamingContent && (
+                <Message role="assistant" content={streamingContent} />
+              )}
+              
+              <div ref={messagesEndRef} />
+            </>
           )}
-          
-          {messages.map((msg, index) => (
-            <Message key={index} role={msg.role} content={msg.content} />
-          ))}
-          
-          {isStreaming && !streamingContent && (
-            <TypingIndicator />
-          )}
-          
-          {isStreaming && streamingContent && (
-            <Message role="assistant" content={streamingContent} />
-          )}
-          
-          <div ref={messagesEndRef} />
         </div>
       </main>
 
