@@ -40,7 +40,7 @@ export default function MessageWithActions({
       onHoverStart={() => setShowActions(true)}
       onHoverEnd={() => setShowActions(false)}
     >
-      <div className="relative max-w-xs lg:max-w-md xl:max-w-lg">
+      <div className="relative max-w-xs sm:max-w-md lg:max-w-2xl xl:max-w-3xl">
         <motion.div
           className={clsx(
             'px-4 py-2.5 rounded-2xl',
