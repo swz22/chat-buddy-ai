@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { messageVariants } from '../utils/animations';
+import MarkdownMessage from './MarkdownMessage';
 import clsx from 'clsx';
 
 interface MessageProps {
@@ -21,7 +22,7 @@ export default function Message({ role, content }: MessageProps) {
     >
       <motion.div
         className={clsx(
-          'max-w-xs lg:max-w-md px-4 py-2 rounded-2xl',
+          'max-w-xs lg:max-w-md xl:max-w-lg px-4 py-2.5 rounded-2xl',
           isUser
             ? 'bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-400 text-white shadow-lg shadow-blue-500/20 dark:shadow-blue-400/20'
             : 'bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-900 dark:text-gray-100 border border-gray-200/50 dark:border-gray-700/50 shadow-lg'
@@ -29,7 +30,7 @@ export default function Message({ role, content }: MessageProps) {
         whileHover={{ scale: 1.02 }}
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
       >
-        <p className="whitespace-pre-wrap">{content}</p>
+        <MarkdownMessage content={content} isUser={isUser} />
       </motion.div>
     </motion.div>
   );
