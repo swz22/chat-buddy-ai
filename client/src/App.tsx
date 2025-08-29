@@ -4,6 +4,7 @@ import Message from './components/Message';
 import ChatInput from './components/ChatInput';
 import TypingIndicator from './components/TypingIndicator';
 import WelcomeScreen from './components/WelcomeScreen';
+import ConnectionStatus from './components/ConnectionStatus';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -60,7 +61,7 @@ function App() {
       setStreamingContent('');
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: 'Sorry, I encountered an error. Please try again.' 
+        content: '⚠️ ' + (data.error || 'Sorry, I encountered an error. Please try again.') 
       }]);
     });
 
@@ -81,8 +82,16 @@ function App() {
     socket.emit('chat:message', { messages: updatedMessages });
   };
 
+  const clearChat = () => {
+    setMessages([]);
+    setStreamingContent('');
+    setIsStreaming(false);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <ConnectionStatus connected={connected} />
+      
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -95,11 +104,26 @@ function App() {
               Chat Buddy AI
             </h1>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className={`w-2 h-2 rounded-full animate-pulse ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
-            <span className="text-sm text-gray-600">
-              {connected ? 'Online' : 'Offline'}
-            </span>
+          
+          <div className="flex items-center space-x-4">
+            {messages.length > 0 && (
+              <button
+                onClick={clearChat}
+                className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Clear chat"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            )}
+            
+            <div className="flex items-center space-x-2">
+              <div className={`w-2 h-2 rounded-full animate-pulse ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="text-sm text-gray-600">
+                {connected ? 'Online' : 'Offline'}
+              </span>
+            </div>
           </div>
         </div>
       </header>
