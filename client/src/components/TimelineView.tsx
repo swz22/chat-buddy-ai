@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Conversation } from '../types/conversation';
 import { formatDistanceToNow } from '../utils/dateHelpers';
 
@@ -98,13 +98,12 @@ export default function TimelineView({
           className="flex gap-3 overflow-x-auto scrollbar-hide pb-2"
           style={{ scrollBehavior: 'smooth' }}
         >
-          <AnimatePresence mode="popLayout">
-            {conversations.slice(0, 10).map((conversation, index) => {
-              const isActive = conversation.id === currentConversationId;
-              const timeAgo = formatDistanceToNow(new Date(conversation.updated_at));
-              
-              return (
-                <motion.div
+          {conversations.slice(0, 10).map((conversation, index) => {
+            const isActive = conversation.id === currentConversationId;
+            const timeAgo = formatDistanceToNow(new Date(conversation.updated_at));
+            
+            return (
+              <motion.div
                   key={conversation.id}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -152,7 +151,6 @@ export default function TimelineView({
                 </motion.div>
               );
             })}
-          </AnimatePresence>
           
           {conversations.length === 0 && (
             <div className="flex items-center justify-center w-full text-gray-500 text-sm">
