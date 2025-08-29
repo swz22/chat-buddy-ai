@@ -27,7 +27,6 @@ function App() {
   const [streamingContent, setStreamingContent] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.CARDS);
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
-  const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -49,9 +48,11 @@ function App() {
 
   useEffect(() => {
     const newSocket = io('http://localhost:5000', {
+      transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5
+      reconnectionAttempts: 5,
+      timeout: 20000
     });
     
     newSocket.on('connect', () => {
@@ -77,10 +78,7 @@ function App() {
       setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
       setIsStreaming(false);
       setStreamingContent('');
-      if (data.conversationId && !currentConversationId) {
-        setCurrentConversationId(data.conversationId);
-      }
-      loadConversations();
+      setCurrentConversationId(data.conversationId);
     });
 
     newSocket.on('chat:error', (data: { error: string }) => {
@@ -89,7 +87,7 @@ function App() {
       setStreamingContent('');
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: '⚠️ ' + (data.error || 'Sorry, I encountered an error. Please try again.') 
+        content: 'Sorry, an error occurred. Please try again.' 
       }]);
     });
 
@@ -167,22 +165,6 @@ function App() {
     setViewMode(ViewMode.CARDS);
   };
 
-  const toggleTimeline = () => {
-    setIsTimelineExpanded(!isTimelineExpanded);
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.metaKey && e.key === 'k') {
-        e.preventDefault();
-        setViewMode(prev => prev === ViewMode.CARDS ? ViewMode.CHAT : ViewMode.CARDS);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <ConnectionStatus connected={connected} />
@@ -190,16 +172,25 @@ function App() {
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm relative z-10">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleHomeClick}
-              className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center hover:shadow-lg transition-shadow"
-            >
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-              </svg>
-            </motion.button>
+            {viewMode === ViewMode.CHAT ? (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleHomeClick}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span>All Chats</span>
+              </motion.button>
+            ) : (
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+              </div>
+            )}
             <h1 className="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
               Chat Buddy AI
             </h1>
@@ -214,10 +205,6 @@ function App() {
             >
               New Chat
             </motion.button>
-            
-            <div className="text-xs text-gray-500 border-l pl-4">
-              <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">⌘K</kbd> to toggle views
-            </div>
             
             <div className="flex items-center space-x-2">
               <div className={`w-2 h-2 rounded-full animate-pulse ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
@@ -234,8 +221,6 @@ function App() {
           conversations={conversations}
           currentConversationId={currentConversationId}
           onSelectConversation={handleSelectConversation}
-          isExpanded={isTimelineExpanded}
-          onToggleExpanded={toggleTimeline}
         />
       )}
 
