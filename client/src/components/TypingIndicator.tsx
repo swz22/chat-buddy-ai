@@ -1,14 +1,13 @@
 import { motion } from 'framer-motion';
-import { typingVariants } from '../utils/animations';
 
 export default function TypingIndicator() {
   return (
     <motion.div 
       className="flex justify-start mb-4"
-      variants={typingVariants}
-      initial="initial"
-      animate="animate"
-      exit="exit"
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ duration: 0.3 }}
     >
       <div className="glass-morphism rounded-2xl px-4 py-3 shadow-lg">
         <div className="flex space-x-1.5">
