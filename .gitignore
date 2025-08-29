@@ -8,6 +8,13 @@ dist/
 build/
 *.production.*
 
+# Database files
+*.db
+*.db-shm
+*.db-wal
+data/
+server/data/
+
 # Environment variables
 .env
 .env.local
