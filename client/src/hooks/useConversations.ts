@@ -15,7 +15,6 @@ export function useConversations(socket: Socket | null) {
 
   const loadConversation = useCallback((conversationId: number) => {
     if (!socket) return;
-    setLoading(true);
     socket.emit('conversation:load', { conversationId });
     setCurrentConversationId(conversationId);
   }, [socket]);
