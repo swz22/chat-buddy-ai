@@ -32,10 +32,8 @@ function App() {
   const {
     conversations,
     loading: conversationsLoading,
-    loadConversation,
     deleteConversation,
-    searchConversations,
-    loadConversations
+    searchConversations
   } = useConversations(socket);
 
   const scrollToBottom = () => {
