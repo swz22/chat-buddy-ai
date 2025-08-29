@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { ChatHandler } from './handlers/chat.handler';
 
 dotenv.config();
 
@@ -30,12 +31,9 @@ app.get('/health', (_req, res) => {
   });
 });
 
+const chatHandler = new ChatHandler();
 io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
-
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-  });
+  chatHandler.handleConnection(socket);
 });
 
 const PORT = process.env.PORT || 5000;
