@@ -166,17 +166,7 @@ function App() {
     setViewMode(ViewMode.CARDS);
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.metaKey && e.key === 'k') {
-        e.preventDefault();
-        setViewMode(prev => prev === ViewMode.CARDS ? ViewMode.CHAT : ViewMode.CARDS);
-      }
-    };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -210,9 +200,7 @@ function App() {
               New Chat
             </motion.button>
             
-            <div className="text-xs text-gray-500 border-l pl-4">
-              <kbd className="px-2 py-1 bg-gray-100 rounded text-xs">⌘K</kbd> to toggle views
-            </div>
+
             
             <div className="flex items-center space-x-2">
               <div className={`w-2 h-2 rounded-full animate-pulse ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
