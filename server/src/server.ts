@@ -13,13 +13,17 @@ const httpServer = createServer(app);
 
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
+    methods: ['GET', 'POST'],
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
   },
+  transports: ['websocket', 'polling'],
+  allowEIO3: true
 });
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
   credentials: true,
 }));
 
@@ -32,6 +36,11 @@ app.get('/health', (_req, res) => {
   });
 });
 
+// Socket.io client files
+app.get('/socket.io/*', (req, res) => {
+  res.status(404).send('Socket.io client files not served from here');
+});
+
 try {
   initializeDatabase();
 } catch (error) {
@@ -41,7 +50,12 @@ try {
 
 const chatHandler = new ChatHandler();
 io.on('connection', (socket) => {
+  console.log('New client connected:', socket.id);
   chatHandler.handleConnection(socket);
+  
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
 });
 
 const PORT = process.env.PORT || 5000;
@@ -50,4 +64,5 @@ httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Database location: server/data/chat.db`);
+  console.log(`Socket.io accepting connections from: http://localhost:5173`);
 });
