@@ -67,13 +67,17 @@ export class ChatHandler {
 
     socket.on('conversation:load', (data: { conversationId: number }) => {
       try {
+        console.log('Loading conversation:', data.conversationId);
         const conversation = ConversationModel.findById(data.conversationId);
         if (!conversation) {
+          console.log('Conversation not found:', data.conversationId);
           socket.emit('conversation:error', { error: 'Conversation not found' });
           return;
         }
         
         const messages = MessageModel.findByConversation(data.conversationId);
+        console.log(`Loaded ${messages.length} messages for conversation ${data.conversationId}`);
+        
         socket.emit('conversation:loaded', {
           conversation,
           messages
