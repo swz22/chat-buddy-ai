@@ -17,8 +17,6 @@ export class ChatHandler {
   }
 
   handleConnection(socket: Socket) {
-    console.log('Client connected:', socket.id);
-
     socket.on('chat:message', async (data: ClientMessage) => {
       try {
         socket.emit('chat:start');
@@ -118,7 +116,6 @@ export class ChatHandler {
 
     socket.on('disconnect', () => {
       this.userConversations.delete(socket.id);
-      console.log('Client disconnected:', socket.id);
     });
   }
 }
