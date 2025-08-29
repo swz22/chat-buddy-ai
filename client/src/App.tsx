@@ -99,6 +99,7 @@ function App() {
     });
 
     newSocket.on('conversation:loaded', (data: { conversation: Conversation; messages: ConversationMessage[] }) => {
+      console.log('Conversation loaded:', data);
       const chatMessages: ChatMessage[] = data.messages.map(msg => ({
         role: msg.role as 'user' | 'assistant',
         content: msg.content
@@ -106,6 +107,11 @@ function App() {
       setMessages(chatMessages);
       setCurrentConversationId(data.conversation.id);
       setViewMode(ViewMode.CHAT);
+    });
+
+    newSocket.on('conversation:error', (data: { error: string }) => {
+      console.error('Conversation error:', data.error);
+      alert('Error loading conversation: ' + data.error);
     });
 
     setSocket(newSocket);
@@ -134,7 +140,9 @@ function App() {
   };
 
   const handleSelectConversation = (conversationId: number) => {
-    loadConversation(conversationId);
+    if (socket) {
+      socket.emit('conversation:load', { conversationId });
+    }
     setCurrentConversationId(conversationId);
   };
 
