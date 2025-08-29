@@ -7,16 +7,12 @@ interface TimelineViewProps {
   conversations: Conversation[];
   currentConversationId: number | null;
   onSelectConversation: (conversationId: number) => void;
-  isExpanded: boolean;
-  onToggleExpanded: () => void;
 }
 
 export default function TimelineView({
   conversations,
   currentConversationId,
-  onSelectConversation,
-  isExpanded,
-  onToggleExpanded
+  onSelectConversation
 }: TimelineViewProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -68,7 +64,14 @@ export default function TimelineView({
       code: '💻',
       api: '🔌',
       database: '🗄️',
-      git: '🌳'
+      git: '🌳',
+      penne: '🍝',
+      pasta: '🍝',
+      food: '🍕',
+      recipe: '👨‍🍳',
+      antonym: '🔄',
+      discord: '💬',
+      word: '📝'
     };
     
     const lowerTitle = title.toLowerCase();
@@ -80,69 +83,61 @@ export default function TimelineView({
 
   return (
     <motion.div
-      initial={{ height: 0, opacity: 0 }}
-      animate={{ 
-        height: isExpanded ? 140 : 100, 
-        opacity: 1 
-      }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="relative bg-gradient-to-r from-slate-900 via-gray-900 to-slate-900 border-b border-gray-700/50 shadow-2xl"
+      initial={{ y: -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+      className="relative bg-gradient-to-r from-slate-900 via-gray-900 to-slate-900 border-b border-gray-700/50 shadow-2xl h-[90px]"
     >
       {/* Gradient overlay for depth */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/30 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/20 pointer-events-none" />
       
-      {/* Expand/Collapse button */}
-      <button
-        onClick={onToggleExpanded}
-        className="absolute right-4 top-3 z-20 p-1.5 hover:bg-white/10 rounded-lg transition-all hover:scale-110"
-      >
-        <motion.svg
-          animate={{ rotate: isExpanded ? 180 : 0 }}
-          className="w-4 h-4 text-gray-400 hover:text-white"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </motion.svg>
-      </button>
-
-      <div className="relative h-full px-4 py-3">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Recent Conversations
-          </h3>
-          <span className="text-xs text-gray-500">
+      {/* Header Section */}
+      <div className="relative flex items-center justify-between px-4 pt-2.5 pb-1.5">
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          Recent Conversations
+        </h3>
+        
+        {/* Chat count badge */}
+        <div className="flex items-center gap-1.5 bg-gray-800/60 backdrop-blur-sm px-2.5 py-1 rounded-full border border-gray-700/50">
+          <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
+          <span className="text-xs text-gray-300 font-medium">
             {conversations.length} {conversations.length === 1 ? 'chat' : 'chats'}
           </span>
         </div>
-        
+      </div>
+
+      {/* Cards Container */}
+      <div className="relative px-4 pb-2">
         {/* Scroll buttons */}
         {canScrollLeft && (
-          <button
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             onClick={() => scrollToDirection('left')}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-1 bg-gray-800/90 hover:bg-gray-700 rounded-full backdrop-blur-sm transition-all hover:scale-110 shadow-lg"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-1.5 bg-gray-800/90 hover:bg-gray-700 rounded-full backdrop-blur-sm transition-all hover:scale-110 shadow-lg border border-gray-700/50"
           >
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-          </button>
+          </motion.button>
         )}
         
         {canScrollRight && (
-          <button
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             onClick={() => scrollToDirection('right')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-1 bg-gray-800/90 hover:bg-gray-700 rounded-full backdrop-blur-sm transition-all hover:scale-110 shadow-lg"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-1.5 bg-gray-800/90 hover:bg-gray-700 rounded-full backdrop-blur-sm transition-all hover:scale-110 shadow-lg border border-gray-700/50"
           >
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-          </button>
+          </motion.button>
         )}
         
         <div
           ref={scrollContainerRef}
-          className="flex gap-3 overflow-x-auto scrollbar-hide pb-4"
+          className="flex gap-2.5 overflow-x-auto overflow-y-hidden scrollbar-hide"
           style={{ scrollBehavior: 'smooth' }}
         >
           {conversations.length > 0 ? (
@@ -153,64 +148,63 @@ export default function TimelineView({
               return (
                 <motion.div
                   key={conversation.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ delay: index * 0.03 }}
-                  whileHover={{ scale: 1.02, y: -2 }}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.02 }}
+                  whileHover={{ scale: 1.02, y: -1 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => onSelectConversation(conversation.id)}
                   className={`
-                    relative flex-shrink-0 w-52 cursor-pointer rounded-xl p-3.5
+                    relative flex-shrink-0 cursor-pointer rounded-lg
                     transition-all duration-300 backdrop-blur-sm border
+                    flex items-center gap-2.5 px-3 py-2 min-w-[200px] max-w-[260px] h-[46px]
                     ${isActive 
-                      ? 'bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 border-blue-400/50 shadow-xl shadow-blue-500/10' 
-                      : 'bg-gray-800/60 hover:bg-gray-700/60 border-gray-700 hover:border-gray-600'
+                      ? 'bg-gradient-to-r from-blue-500/25 to-purple-500/25 border-blue-400/60 shadow-lg shadow-blue-500/10' 
+                      : 'bg-gray-800/50 hover:bg-gray-700/50 border-gray-700/50 hover:border-gray-600'
                     }
                   `}
                 >
+                  {/* Active indicator dot */}
                   {isActive && (
                     <motion.div
                       layoutId="activeIndicator"
-                      className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 rounded-full shadow-glow"
-                    />
+                      className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-blue-400 rounded-full"
+                    >
+                      <div className="absolute inset-0 bg-blue-400 rounded-full animate-ping opacity-75" />
+                    </motion.div>
                   )}
                   
-                  <div className="flex items-start gap-3">
-                    <span className={`text-xl ${isActive ? 'animate-pulse' : ''}`}>
-                      {getEmoji(conversation.title)}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <h4 className={`text-sm font-medium truncate ${
-                        isActive ? 'text-white' : 'text-gray-200'
-                      }`}>
-                        {conversation.title}
-                      </h4>
-                      {isExpanded && (
-                        <p className="text-xs text-gray-400 mt-1.5 line-clamp-2">
-                          Click to continue this conversation...
-                        </p>
-                      )}
-                      <div className={`text-xs mt-2 ${
-                        isActive ? 'text-blue-300' : 'text-gray-500'
-                      }`}>
-                        {timeAgo}
-                      </div>
+                  {/* Emoji */}
+                  <span className={`text-lg flex-shrink-0 ${isActive ? 'animate-pulse' : ''}`}>
+                    {getEmoji(conversation.title)}
+                  </span>
+                  
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <h4 className={`text-xs font-medium truncate ${
+                      isActive ? 'text-white' : 'text-gray-300'
+                    }`}>
+                      {conversation.title}
+                    </h4>
+                    <div className={`text-[10px] mt-0.5 ${
+                      isActive ? 'text-blue-300' : 'text-gray-500'
+                    }`}>
+                      {timeAgo}
                     </div>
                   </div>
-                  
+
+                  {/* Active glow effect */}
                   {isActive && (
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400/5 via-purple-400/5 to-pink-400/5 animate-pulse pointer-events-none" />
+                    <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-400/5 via-purple-400/5 to-pink-400/5 pointer-events-none" />
                   )}
                 </motion.div>
               );
             })
           ) : (
-            <div className="flex items-center justify-center w-full text-gray-500 text-sm py-4">
+            <div className="flex items-center justify-center w-full text-gray-500 text-sm h-[46px]">
               <div className="text-center">
-                <div className="text-2xl mb-2">📭</div>
-                <p>No conversations yet</p>
-                <p className="text-xs mt-1">Start chatting to see your history here</p>
+                <div className="text-xl mb-1">📭</div>
+                <p className="text-xs">No conversations yet</p>
               </div>
             </div>
           )}
@@ -218,16 +212,15 @@ export default function TimelineView({
         
         {/* Enhanced scroll progress indicator */}
         {conversations.length > 3 && (
-          <div className="absolute bottom-1 left-4 right-4">
-            <div className="h-1.5 bg-gray-700/50 rounded-full overflow-hidden backdrop-blur-sm">
+          <div className="absolute bottom-0 left-0 right-0">
+            <div className="h-0.5 bg-gray-700/30 rounded-full overflow-hidden">
               <motion.div
                 className="h-full rounded-full relative"
-                style={{ width: '25%' }}
-                animate={{ x: `${scrollProgress * 300}%` }}
+                style={{ width: '20%' }}
+                animate={{ x: `${scrollProgress * 400}%` }}
                 transition={{ type: 'spring', damping: 30 }}
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 rounded-full" />
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 rounded-full blur-sm" />
               </motion.div>
             </div>
           </div>
