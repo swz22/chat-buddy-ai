@@ -7,6 +7,8 @@ import TypingIndicator from './components/TypingIndicator';
 import WelcomeScreen from './components/WelcomeScreen';
 import Header from './components/Header';
 import AnimatedBackground from './components/AnimatedBackground';
+import ScrollToBottom from './components/ScrollToBottom';
+import { useScrollDetection } from './hooks/useScrollDetection';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -21,13 +23,15 @@ function App() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const { showScrollButton, scrollToBottom } = useScrollDetection(mainRef);
 
-  const scrollToBottom = () => {
+  const autoScrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
-    scrollToBottom();
+    autoScrollToBottom();
   }, [messages, streamingContent, isStreaming]);
 
   useEffect(() => {
@@ -120,7 +124,7 @@ function App() {
       
       <Header connected={connected} />
 
-      <main className="flex-1 overflow-y-auto scrollbar-thin">
+      <main ref={mainRef} className="flex-1 overflow-y-auto scrollbar-thin relative">
         <motion.div 
           className="max-w-4xl mx-auto p-4 pb-8"
           initial={{ opacity: 0 }}
@@ -156,6 +160,8 @@ function App() {
           
           <div ref={messagesEndRef} />
         </motion.div>
+
+        <ScrollToBottom show={showScrollButton} onClick={scrollToBottom} />
       </main>
 
       <ChatInput 
