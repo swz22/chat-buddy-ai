@@ -1,7 +1,11 @@
 import { motion } from 'framer-motion';
 import { fadeInUp, staggerContainer } from '../utils/animations';
 
-export default function WelcomeScreen() {
+interface WelcomeScreenProps {
+  onSuggestionClick?: (suggestion: string) => void;
+}
+
+export default function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
   const suggestions = [
     "Explain quantum computing in simple terms",
     "Write a haiku about programming",
@@ -36,35 +40,7 @@ export default function WelcomeScreen() {
               </svg>
               <span className="font-semibold text-gray-900 dark:text-gray-100">Real-time Streaming</span>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Watch responses appear token by token</p>
-          </motion.div>
-          
-          <motion.div 
-            className="text-left bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
-            whileHover={{ scale: 1.02, y: -2 }}
-            transition={{ type: "spring", stiffness: 400 }}
-          >
-            <div className="flex items-center mb-2">
-              <svg className="w-5 h-5 text-green-600 dark:text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="font-semibold text-gray-900 dark:text-gray-100">Always Connected</span>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Persistent WebSocket connection</p>
-          </motion.div>
-          
-          <motion.div 
-            className="text-left bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
-            whileHover={{ scale: 1.02, y: -2 }}
-            transition={{ type: "spring", stiffness: 400 }}
-          >
-            <div className="flex items-center mb-2">
-              <svg className="w-5 h-5 text-purple-600 dark:text-purple-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-              </svg>
-              <span className="font-semibold text-gray-900 dark:text-gray-100">Smart AI</span>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Powered by GPT-3.5 Turbo</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Watch responses appear with smooth animations</p>
           </motion.div>
           
           <motion.div 
@@ -88,8 +64,8 @@ export default function WelcomeScreen() {
             {suggestions.map((suggestion, index) => (
               <motion.button
                 key={index}
-                className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700"
-                disabled
+                className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 hover:scale-105 transition-all border border-gray-200 dark:border-gray-700 cursor-pointer"
+                onClick={() => onSuggestionClick?.(suggestion)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 initial={{ opacity: 0, y: 20 }}
