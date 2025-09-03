@@ -3,7 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import { motion } from 'framer-motion';
 import Message from './components/Message';
 import ChatInput from './components/ChatInput';
-import TypingIndicator from './components/TypingIndicator';
+import StreamingMessage from './components/StreamingMessage';
 import WelcomeScreen from './components/WelcomeScreen';
 import ConnectionStatus from './components/ConnectionStatus';
 import ConversationCards from './components/ConversationCards';
@@ -72,11 +72,10 @@ function App() {
       setStreamingContent(prev => prev + data.token);
     });
 
-    newSocket.on('chat:complete', (data: { message: string; conversationId: number }) => {
+    newSocket.on('chat:complete', (data: { message: string }) => {
       setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
       setIsStreaming(false);
       setStreamingContent('');
-      setCurrentConversationId(data.conversationId);
     });
 
     newSocket.on('chat:error', (data: { error: string }) => {
@@ -85,7 +84,7 @@ function App() {
       setStreamingContent('');
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: 'Sorry, an error occurred. Please try again.' 
+        content: 'Sorry, I encountered an error. Please try again.' 
       }]);
     });
 
@@ -254,12 +253,11 @@ function App() {
                         <Message key={index} role={msg.role} content={msg.content} />
                       ))}
                       
-                      {isStreaming && !streamingContent && (
-                        <TypingIndicator />
-                      )}
-                      
-                      {isStreaming && streamingContent && (
-                        <Message role="assistant" content={streamingContent} />
+                      {isStreaming && (
+                        <StreamingMessage 
+                          content={streamingContent} 
+                          isComplete={false} 
+                        />
                       )}
                       
                       <div ref={messagesEndRef} />
