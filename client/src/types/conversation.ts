@@ -3,12 +3,14 @@ export interface Conversation {
   title: string;
   created_at: string;
   updated_at: string;
+  lastMessage?: string;
+  messageCount?: number;
 }
 
 export interface Message {
-  id: number;
+  id?: number;
   conversation_id: number;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  created_at: string;
+  created_at?: string;
 }

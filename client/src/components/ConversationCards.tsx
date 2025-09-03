@@ -82,6 +82,21 @@ export default function ConversationCards({
     return Object.entries(groups).filter(([_, convs]) => convs.length > 0);
   };
 
+  const getPreviewText = (conversation: Conversation) => {
+    if (conversation.lastMessage) {
+      const preview = conversation.lastMessage.substring(0, 120);
+      return preview.length < conversation.lastMessage.length ? `${preview}...` : preview;
+    }
+    return "Start of a new conversation...";
+  };
+
+  const getMessageCount = (conversation: Conversation) => {
+    const count = conversation.messageCount || 0;
+    if (count === 0) return 'No messages';
+    if (count === 1) return '1 message';
+    return `${count} messages`;
+  };
+
   if (loading) {
     return <SkeletonLoader variant="card" count={6} />;
   }
@@ -115,35 +130,51 @@ export default function ConversationCards({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: groupIndex * 0.1 + index * 0.05 }}
                 whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                onClick={() => onSelectConversation(conversation.id)}
-                className="relative bg-white rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer p-4 group"
+                className="relative group"
               >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteConversation(conversation.id);
-                  }}
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-50 rounded"
+                <div
+                  onClick={() => onSelectConversation(conversation.id!)}
+                  className="relative bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 p-5 cursor-pointer border border-gray-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-600"
                 >
-                  <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg flex items-center justify-center">
-                    <span className="text-xl">{getEmoji(conversation.title)}</span>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 flex items-center justify-center">
+                        <span className="text-xl">{getEmoji(conversation.title)}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate pr-2">
+                          {conversation.title}
+                        </h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          {getTimeAgo(conversation.updated_at)}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteConversation(conversation.id!);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                    >
+                      <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
                   
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-gray-900 truncate mb-1">
-                      {conversation.title}
-                    </h4>
-                    <p className="text-sm text-gray-500 line-clamp-2 mb-2">
-                      {conversation.title.length > 50 ? conversation.title.slice(0, 50) + '...' : 'Start typing to begin...'}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-gray-400">
-                      <span>{getTimeAgo(conversation.updated_at)}</span>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 mb-3">
+                    {getPreviewText(conversation)}
+                  </p>
+                  
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      {getMessageCount(conversation)}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
+                      <span className="text-gray-500 dark:text-gray-400">Active</span>
                     </div>
                   </div>
                 </div>

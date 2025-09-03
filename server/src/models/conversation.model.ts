@@ -5,6 +5,8 @@ export interface Conversation {
   title: string;
   created_at?: string;
   updated_at?: string;
+  lastMessage?: string;
+  messageCount?: number;
 }
 
 export interface Message {
@@ -26,14 +28,45 @@ export class ConversationModel {
 
   static findById(id: number): Conversation | undefined {
     const stmt = db.prepare('SELECT * FROM conversations WHERE id = ?');
-    return stmt.get(id) as Conversation | undefined;
+    const conversation = stmt.get(id) as Conversation | undefined;
+    
+    if (conversation) {
+      const messageInfo = this.getMessageInfo(id);
+      conversation.lastMessage = messageInfo.lastMessage;
+      conversation.messageCount = messageInfo.messageCount;
+    }
+    
+    return conversation;
   }
 
   static findAll(limit = 20, offset = 0): Conversation[] {
     const stmt = db.prepare(
       'SELECT * FROM conversations ORDER BY updated_at DESC LIMIT ? OFFSET ?'
     );
-    return stmt.all(limit, offset) as Conversation[];
+    const conversations = stmt.all(limit, offset) as Conversation[];
+    
+    conversations.forEach(conv => {
+      const messageInfo = this.getMessageInfo(conv.id!);
+      conv.lastMessage = messageInfo.lastMessage;
+      conv.messageCount = messageInfo.messageCount;
+    });
+    
+    return conversations;
+  }
+
+  static getMessageInfo(conversationId: number): { lastMessage?: string; messageCount: number } {
+    const countStmt = db.prepare('SELECT COUNT(*) as count FROM messages WHERE conversation_id = ?');
+    const lastMessageStmt = db.prepare(
+      "SELECT content FROM messages WHERE conversation_id = ? AND role = 'assistant' ORDER BY created_at DESC LIMIT 1"
+    );
+    
+    const countResult = countStmt.get(conversationId) as { count: number };
+    const lastMessageResult = lastMessageStmt.get(conversationId) as { content: string } | undefined;
+    
+    return {
+      messageCount: countResult.count,
+      lastMessage: lastMessageResult?.content
+    };
   }
 
   static update(id: number, title: string): void {
@@ -64,7 +97,15 @@ export class ConversationModel {
       LIMIT ?
     `);
     const searchPattern = `%${query}%`;
-    return stmt.all(searchPattern, searchPattern, limit) as Conversation[];
+    const conversations = stmt.all(searchPattern, searchPattern, limit) as Conversation[];
+    
+    conversations.forEach(conv => {
+      const messageInfo = this.getMessageInfo(conv.id!);
+      conv.lastMessage = messageInfo.lastMessage;
+      conv.messageCount = messageInfo.messageCount;
+    });
+    
+    return conversations;
   }
 
   static generateTitle(firstMessage: string): string {
