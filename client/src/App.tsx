@@ -11,6 +11,7 @@ import ConversationCards from './components/ConversationCards';
 import TimelineView from './components/TimelineView';
 import SearchBar from './components/SearchBar';
 import AnimatedTransition from './components/AnimatedTransition';
+import AnimatedLogo from './components/AnimatedLogo';
 import { useConversations } from './hooks/useConversations';
 import { useTokenBuffer } from './hooks/useTokenBuffer';
 import { ViewMode } from './types/appState';
@@ -29,6 +30,7 @@ function App() {
   const [isThinking, setIsThinking] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.CARDS);
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
+  const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -143,6 +145,7 @@ function App() {
     const newMessage: ChatMessage = { role: 'user', content };
     const updatedMessages = [...messages, newMessage];
     setMessages(updatedMessages);
+    setInputValue(''); // Clear the input value after sending
 
     socket.emit('chat:message', { 
       messages: updatedMessages,
@@ -179,6 +182,10 @@ function App() {
     setViewMode(ViewMode.CARDS);
   };
 
+  const handleSuggestionClick = (suggestion: string) => {
+    setInputValue(suggestion);
+  };
+
   const handleHomeClick = () => {
     setViewMode(ViewMode.CARDS);
   };
@@ -203,11 +210,7 @@ function App() {
                 <span>All Chats</span>
               </motion.button>
             ) : (
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
-              </div>
+              <AnimatedLogo size="medium" />
             )}
             <h1 className="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
               Chat Buddy AI
@@ -260,6 +263,7 @@ function App() {
               <ChatInput 
                 onSendMessage={sendMessage} 
                 disabled={!connected || isStreaming} 
+                initialValue={inputValue}
               />
             </div>
           ) : (
@@ -267,7 +271,7 @@ function App() {
               <div className="flex-1 overflow-y-auto">
                 <div className="max-w-4xl mx-auto p-4">
                   {messages.length === 0 && !isStreaming && !isThinking ? (
-                    <WelcomeScreen />
+                    <WelcomeScreen onSuggestionClick={handleSuggestionClick} />
                   ) : (
                     <>
                       {messages.map((msg, index) => (
@@ -296,6 +300,7 @@ function App() {
               <ChatInput 
                 onSendMessage={sendMessage} 
                 disabled={!connected || isStreaming || isThinking} 
+                initialValue={inputValue}
               />
             </div>
           )}
