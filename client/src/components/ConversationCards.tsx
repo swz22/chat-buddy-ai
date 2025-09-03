@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Conversation } from '../types/conversation';
 import { formatDistanceToNow } from '../utils/dateHelpers';
+import SkeletonLoader from './SkeletonLoader';
 
 interface ConversationCardsProps {
   conversations: Conversation[];
@@ -59,116 +60,98 @@ export default function ConversationCards({
     thisWeek.setDate(thisWeek.getDate() - 7);
 
     const groups: Record<string, Conversation[]> = {
-      Today: [],
-      Yesterday: [],
+      'Today': [],
+      'Yesterday': [],
       'This Week': [],
-      Earlier: []
+      'Earlier': []
     };
 
     convs.forEach(conv => {
-      const convDate = new Date(conv.updated_at);
-      if (convDate.toDateString() === today.toDateString()) {
-        groups.Today.push(conv);
-      } else if (convDate.toDateString() === yesterday.toDateString()) {
-        groups.Yesterday.push(conv);
-      } else if (convDate > thisWeek) {
+      const date = new Date(conv.updated_at);
+      if (date.toDateString() === today.toDateString()) {
+        groups['Today'].push(conv);
+      } else if (date.toDateString() === yesterday.toDateString()) {
+        groups['Yesterday'].push(conv);
+      } else if (date > thisWeek) {
         groups['This Week'].push(conv);
       } else {
-        groups.Earlier.push(conv);
+        groups['Earlier'].push(conv);
       }
     });
 
-    return groups;
+    return Object.entries(groups).filter(([_, convs]) => convs.length > 0);
   };
 
-  const groups = groupConversationsByDate(conversations);
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-gray-500">Loading conversations...</div>
-      </div>
-    );
+    return <SkeletonLoader variant="card" count={6} />;
   }
 
   if (conversations.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <div className="text-6xl mb-4">💬</div>
-        <h2 className="text-2xl font-semibold text-gray-800 mb-2">No conversations yet</h2>
-        <p className="text-gray-600">Start a new chat to begin!</p>
+      <div className="flex flex-col items-center justify-center h-full text-gray-500 p-8">
+        <svg className="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        <h3 className="text-lg font-semibold mb-2">No conversations yet</h3>
+        <p className="text-sm text-center">Start a new chat to begin your AI journey</p>
       </div>
     );
   }
 
+  const groupedConversations = groupConversationsByDate(conversations);
+
   return (
-    <div className="p-6 overflow-y-auto h-full bg-gradient-to-br from-gray-50 to-gray-100">
-      {Object.entries(groups).map(([groupName, groupConvs]) => {
-        if (groupConvs.length === 0) return null;
-        
-        return (
-          <div key={groupName} className="mb-8">
-            <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-4 px-1">
-              {groupName}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {groupConvs.map((conversation, index) => (
-                <motion.div
-                  key={conversation.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ y: -5, transition: { duration: 0.2 } }}
-                  className="relative group"
+    <div className="p-6 overflow-y-auto">
+      {groupedConversations.map(([group, convs], groupIndex) => (
+        <div key={group} className="mb-8">
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            {group}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {convs.map((conversation, index) => (
+              <motion.div
+                key={conversation.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: groupIndex * 0.1 + index * 0.05 }}
+                whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                onClick={() => onSelectConversation(conversation.id)}
+                className="relative bg-white rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer p-4 group"
+              >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteConversation(conversation.id);
+                  }}
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-50 rounded"
                 >
-                  <div
-                    onClick={() => onSelectConversation(conversation.id)}
-                    className="bg-white rounded-xl p-5 cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-blue-400 relative overflow-hidden"
-                  >
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    
-                    <div className="flex items-start mb-3">
-                      <span className="text-2xl mr-3">{getEmoji(conversation.title)}</span>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 line-clamp-2">
-                          {conversation.title}
-                        </h4>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {getTimeAgo(conversation.updated_at)}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="text-sm text-gray-600 line-clamp-3">
-                      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-2 mb-2">
-                        <span className="text-xs text-blue-600">You:</span>
-                        <p className="text-xs mt-1">How can I implement this feature...</p>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-2">
-                        <span className="text-xs text-gray-600">AI:</span>
-                        <p className="text-xs mt-1">{"Here's a great approach to..."}</p>
-                      </div>
-                    </div>
-                    
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteConversation(conversation.id);
-                      }}
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-red-50 rounded-lg"
-                    >
-                      <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                  <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg flex items-center justify-center">
+                    <span className="text-xl">{getEmoji(conversation.title)}</span>
                   </div>
-                </motion.div>
-              ))}
-            </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-gray-900 truncate mb-1">
+                      {conversation.title}
+                    </h4>
+                    <p className="text-sm text-gray-500 line-clamp-2 mb-2">
+                      {conversation.title.length > 50 ? conversation.title.slice(0, 50) + '...' : 'Start typing to begin...'}
+                    </p>
+                    <div className="flex items-center justify-between text-xs text-gray-400">
+                      <span>{getTimeAgo(conversation.updated_at)}</span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 }
