@@ -11,6 +11,7 @@ import TimelineView from './components/TimelineView';
 import SearchBar from './components/SearchBar';
 import AnimatedTransition from './components/AnimatedTransition';
 import { useConversations } from './hooks/useConversations';
+import { useTokenBuffer } from './hooks/useTokenBuffer';
 import { ViewMode } from './types/appState';
 import { Conversation, Message as ConversationMessage } from './types/conversation';
 
@@ -24,10 +25,19 @@ function App() {
   const [connected, setConnected] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [streamingContent, setStreamingContent] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.CARDS);
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const {
+    bufferedContent,
+    addToken,
+    forceFlush,
+    reset: resetBuffer
+  } = useTokenBuffer({
+    flushInterval: 50,
+    minBufferSize: 3
+  });
 
   const {
     conversations,
@@ -42,7 +52,7 @@ function App() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, streamingContent, isStreaming]);
+  }, [messages, bufferedContent, isStreaming]);
 
   useEffect(() => {
     const newSocket = io('http://localhost:5000', {
@@ -65,23 +75,26 @@ function App() {
 
     newSocket.on('chat:start', () => {
       setIsStreaming(true);
-      setStreamingContent('');
+      resetBuffer();
     });
 
     newSocket.on('chat:token', (data: { token: string }) => {
-      setStreamingContent(prev => prev + data.token);
+      addToken(data.token);
     });
 
     newSocket.on('chat:complete', (data: { message: string }) => {
-      setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
-      setIsStreaming(false);
-      setStreamingContent('');
+      forceFlush();
+      setTimeout(() => {
+        setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
+        setIsStreaming(false);
+        resetBuffer();
+      }, 100);
     });
 
     newSocket.on('chat:error', (data: { error: string }) => {
       console.error('Chat error:', data.error);
       setIsStreaming(false);
-      setStreamingContent('');
+      resetBuffer();
       setMessages(prev => [...prev, { 
         role: 'assistant', 
         content: 'Sorry, I encountered an error. Please try again.' 
@@ -115,7 +128,7 @@ function App() {
       newSocket.removeAllListeners();
       newSocket.close();
     };
-  }, []);
+  }, [addToken, forceFlush, resetBuffer]);
 
   const sendMessage = (content: string) => {
     if (!socket || !connected) return;
@@ -152,7 +165,7 @@ function App() {
 
   const handleNewChat = () => {
     setMessages([]);
-    setStreamingContent('');
+    resetBuffer();
     setIsStreaming(false);
     setCurrentConversationId(null);
     setViewMode(ViewMode.CARDS);
@@ -255,7 +268,7 @@ function App() {
                       
                       {isStreaming && (
                         <StreamingMessage 
-                          content={streamingContent} 
+                          content={bufferedContent} 
                           isComplete={false} 
                         />
                       )}
