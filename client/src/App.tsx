@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Message from './components/Message';
 import ChatInput from './components/ChatInput';
 import StreamingMessage from './components/StreamingMessage';
+import ThinkingAnimation from './components/ThinkingAnimation';
 import WelcomeScreen from './components/WelcomeScreen';
 import ConnectionStatus from './components/ConnectionStatus';
 import ConversationCards from './components/ConversationCards';
@@ -25,6 +26,7 @@ function App() {
   const [connected, setConnected] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.CARDS);
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -52,7 +54,7 @@ function App() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, bufferedContent, isStreaming]);
+  }, [messages, bufferedContent, isStreaming, isThinking]);
 
   useEffect(() => {
     const newSocket = io('http://localhost:5000', {
@@ -74,8 +76,12 @@ function App() {
     });
 
     newSocket.on('chat:start', () => {
-      setIsStreaming(true);
-      resetBuffer();
+      setIsThinking(true);
+      setTimeout(() => {
+        setIsThinking(false);
+        setIsStreaming(true);
+        resetBuffer();
+      }, 800);
     });
 
     newSocket.on('chat:token', (data: { token: string }) => {
@@ -93,6 +99,7 @@ function App() {
 
     newSocket.on('chat:error', (data: { error: string }) => {
       console.error('Chat error:', data.error);
+      setIsThinking(false);
       setIsStreaming(false);
       resetBuffer();
       setMessages(prev => [...prev, { 
@@ -167,6 +174,7 @@ function App() {
     setMessages([]);
     resetBuffer();
     setIsStreaming(false);
+    setIsThinking(false);
     setCurrentConversationId(null);
     setViewMode(ViewMode.CARDS);
   };
@@ -258,7 +266,7 @@ function App() {
             <div className="h-full flex flex-col">
               <div className="flex-1 overflow-y-auto">
                 <div className="max-w-4xl mx-auto p-4">
-                  {messages.length === 0 && !isStreaming ? (
+                  {messages.length === 0 && !isStreaming && !isThinking ? (
                     <WelcomeScreen />
                   ) : (
                     <>
@@ -266,12 +274,19 @@ function App() {
                         <Message key={index} role={msg.role} content={msg.content} />
                       ))}
                       
-                      {isStreaming && (
-                        <StreamingMessage 
-                          content={bufferedContent} 
-                          isComplete={false} 
-                        />
-                      )}
+                      <AnimatePresence mode="wait">
+                        {isThinking && (
+                          <ThinkingAnimation key="thinking" />
+                        )}
+                        
+                        {isStreaming && !isThinking && (
+                          <StreamingMessage 
+                            key="streaming"
+                            content={bufferedContent} 
+                            isComplete={false} 
+                          />
+                        )}
+                      </AnimatePresence>
                       
                       <div ref={messagesEndRef} />
                     </>
@@ -280,7 +295,7 @@ function App() {
               </div>
               <ChatInput 
                 onSendMessage={sendMessage} 
-                disabled={!connected || isStreaming} 
+                disabled={!connected || isStreaming || isThinking} 
               />
             </div>
           )}
