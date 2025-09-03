@@ -1,0 +1,185 @@
+/* Plasma Stream Animation Styles */
+.streaming-message {
+  position: relative;
+  min-height: 2rem;
+}
+
+.plasma-stream-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.03),
+    rgba(147, 51, 234, 0.03),
+    transparent
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.streaming-text {
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.08) 0%,
+    rgba(147, 51, 234, 0.08) 25%,
+    rgba(236, 72, 153, 0.05) 50%,
+    transparent 70%
+  );
+  background-size: 300% 100%;
+  animation: plasma-flow 3s ease-in-out infinite;
+  background-clip: padding-box;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+@keyframes plasma-flow {
+  0% {
+    background-position: -100% 0;
+  }
+  100% {
+    background-position: 100% 0;
+  }
+}
+
+.plasma-cursor {
+  display: inline-block;
+  width: 3px;
+  height: 1.2em;
+  background: linear-gradient(180deg, #3b82f6, #9333ea);
+  margin-left: 2px;
+  border-radius: 2px;
+  vertical-align: text-bottom;
+  box-shadow: 
+    0 0 10px rgba(59, 130, 246, 0.8),
+    0 0 20px rgba(147, 51, 234, 0.6),
+    0 0 30px rgba(236, 72, 153, 0.4);
+  animation: cursor-pulse 1s ease-in-out infinite;
+}
+
+@keyframes cursor-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scaleY(0.97);
+  }
+}
+
+.completion-flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    transparent,
+    rgba(59, 130, 246, 0.1),
+    rgba(147, 51, 234, 0.1),
+    transparent
+  );
+  animation: completion-sweep 0.5s ease-out forwards;
+  pointer-events: none;
+  border-radius: 8px;
+}
+
+@keyframes completion-sweep {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+}
+
+/* Dark mode adjustments */
+.dark .streaming-text {
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.15) 0%,
+    rgba(147, 51, 234, 0.15) 25%,
+    rgba(236, 72, 153, 0.1) 50%,
+    transparent 70%
+  );
+}
+
+.dark .plasma-cursor {
+  box-shadow: 
+    0 0 15px rgba(59, 130, 246, 1),
+    0 0 30px rgba(147, 51, 234, 0.8),
+    0 0 45px rgba(236, 72, 153, 0.6);
+}
+
+.dark .completion-flash {
+  background: linear-gradient(
+    135deg,
+    transparent,
+    rgba(59, 130, 246, 0.2),
+    rgba(147, 51, 234, 0.2),
+    transparent
+  );
+}
+
+/* Smooth text appearance */
+.streaming-text > * {
+  animation: text-appear 0.3s ease-out;
+}
+
+@keyframes text-appear {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Prevent layout shift */
+.streaming-message .prose {
+  min-height: 1.5rem;
+  transition: min-height 0.2s ease-out;
+}
+
+/* Code block streaming enhancement */
+.streaming-text pre {
+  position: relative;
+  overflow: hidden;
+}
+
+.streaming-text pre::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 20px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(59, 130, 246, 0.3)
+  );
+  animation: code-stream 2s ease-in-out infinite;
+}
+
+@keyframes code-stream {
+  0%, 100% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(-100%);
+    opacity: 1;
+  }
+}
