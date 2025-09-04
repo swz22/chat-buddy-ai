@@ -8,61 +8,81 @@ export function formatDistanceToNow(date: Date): string {
   
   const diffInMinutes = Math.floor(diffInSeconds / 60);
   if (diffInMinutes < 60) {
-    return diffInMinutes === 1 ? '1 minute ago' : `${diffInMinutes} minutes ago`;
+    return `${diffInMinutes} ${diffInMinutes === 1 ? 'minute' : 'minutes'} ago`;
   }
   
   const diffInHours = Math.floor(diffInMinutes / 60);
   if (diffInHours < 24) {
-    return diffInHours === 1 ? '1 hour ago' : `${diffInHours} hours ago`;
+    return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
   }
   
   const diffInDays = Math.floor(diffInHours / 24);
   if (diffInDays < 7) {
-    return diffInDays === 1 ? 'yesterday' : `${diffInDays} days ago`;
+    return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
   }
   
   const diffInWeeks = Math.floor(diffInDays / 7);
   if (diffInWeeks < 4) {
-    return diffInWeeks === 1 ? '1 week ago' : `${diffInWeeks} weeks ago`;
+    return `${diffInWeeks} ${diffInWeeks === 1 ? 'week' : 'weeks'} ago`;
   }
   
   const diffInMonths = Math.floor(diffInDays / 30);
   if (diffInMonths < 12) {
-    return diffInMonths === 1 ? '1 month ago' : `${diffInMonths} months ago`;
+    return `${diffInMonths} ${diffInMonths === 1 ? 'month' : 'months'} ago`;
   }
   
   const diffInYears = Math.floor(diffInDays / 365);
-  return diffInYears === 1 ? '1 year ago' : `${diffInYears} years ago`;
+  return `${diffInYears} ${diffInYears === 1 ? 'year' : 'years'} ago`;
+}
+
+export function formatTime(date: Date): string {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  const displayMinutes = minutes.toString().padStart(2, '0');
+  return `${displayHours}:${displayMinutes} ${ampm}`;
 }
 
 export function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('en-US', {
+  const options: Intl.DateTimeFormatOptions = {
+    weekday: 'short',
     month: 'short',
     day: 'numeric',
-    year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  }).format(date);
+    year: 'numeric'
+  };
+  return date.toLocaleDateString('en-US', options);
+}
+
+export function formatFullDateTime(date: Date): string {
+  return `${formatDate(date)} at ${formatTime(date)}`;
 }
 
 export function isToday(date: Date): boolean {
   const today = new Date();
-  return date.getDate() === today.getDate() &&
+  return (
+    date.getDate() === today.getDate() &&
     date.getMonth() === today.getMonth() &&
-    date.getFullYear() === today.getFullYear();
+    date.getFullYear() === today.getFullYear()
+  );
 }
 
 export function isYesterday(date: Date): boolean {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  return date.getDate() === yesterday.getDate() &&
+  return (
+    date.getDate() === yesterday.getDate() &&
     date.getMonth() === yesterday.getMonth() &&
-    date.getFullYear() === yesterday.getFullYear();
+    date.getFullYear() === yesterday.getFullYear()
+  );
 }
 
-export function isThisWeek(date: Date): boolean {
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  return date > weekAgo;
+export function getRelativeTimeString(date: Date): string {
+  if (isToday(date)) {
+    return `Today at ${formatTime(date)}`;
+  }
+  if (isYesterday(date)) {
+    return `Yesterday at ${formatTime(date)}`;
+  }
+  return formatFullDateTime(date);
 }

@@ -5,17 +5,26 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import remarkGfm from 'remark-gfm';
 import { messageVariants } from '../utils/animations';
+import { formatDistanceToNow, getRelativeTimeString } from '../utils/dateHelpers';
 
 interface MessageProps {
   role: 'user' | 'assistant';
   content: string;
+  timestamp?: Date;
   onRegenerate?: () => void;
   showActions?: boolean;
 }
 
-export default function Message({ role, content, onRegenerate, showActions = true }: MessageProps) {
+export default function Message({ 
+  role, 
+  content, 
+  timestamp = new Date(),
+  onRegenerate, 
+  showActions = true 
+}: MessageProps) {
   const isUser = role === 'user';
   const [copied, setCopied] = useState(false);
+  const [showFullTime, setShowFullTime] = useState(false);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
@@ -89,40 +98,52 @@ export default function Message({ role, content, onRegenerate, showActions = tru
           )}
         </div>
         
-        {!isUser && showActions && (
-          <motion.div 
-            className="flex gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity"
-            initial={{ opacity: 0 }}
-            whileHover={{ opacity: 1 }}
+        <div className={`flex items-center gap-2 mt-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
+          <motion.div
+            className="text-xs text-gray-500 dark:text-gray-400 cursor-pointer select-none"
+            onClick={() => setShowFullTime(!showFullTime)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <button 
-              onClick={handleCopy}
-              className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-              title="Copy message"
-            >
-              {copied ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                </svg>
-              )}
-            </button>
-            {onRegenerate && (
-              <button 
-                onClick={onRegenerate}
-                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                title="Regenerate response"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </button>
-            )}
+            {showFullTime ? getRelativeTimeString(timestamp) : formatDistanceToNow(timestamp)}
           </motion.div>
-        )}
+          
+          {!isUser && showActions && (
+            <motion.div 
+              className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              initial={{ opacity: 0 }}
+              whileHover={{ opacity: 1 }}
+            >
+              <button 
+                onClick={handleCopy}
+                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Copy message"
+              >
+                {copied ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                )}
+              </button>
+              
+              {onRegenerate && (
+                <button 
+                  onClick={onRegenerate}
+                  className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                  title="Regenerate response"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+              )}
+            </motion.div>
+          )}
+        </div>
       </div>
     </motion.div>
   );
