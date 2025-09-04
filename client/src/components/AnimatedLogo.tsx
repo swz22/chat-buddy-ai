@@ -17,7 +17,6 @@ export default function AnimatedLogo({ size = 'medium', animate = true, isActive
   };
 
   const { width, height } = dimensions[size];
-  const scale = width / 64;
 
   useEffect(() => {
     const positions = [];

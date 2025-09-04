@@ -6,7 +6,6 @@ import ChatInput from './components/ChatInput';
 import StreamingMessage from './components/StreamingMessage';
 import ThinkingAnimation from './components/ThinkingAnimation';
 import WelcomeScreen from './components/WelcomeScreen';
-import ConnectionStatus from './components/ConnectionStatus';
 import ConversationCards from './components/ConversationCards';
 import TimelineView from './components/TimelineView';
 import SearchBar from './components/SearchBar';
