@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import Message from './components/Message';
@@ -12,8 +12,10 @@ import SearchBar from './components/SearchBar';
 import AnimatedTransition from './components/AnimatedTransition';
 import AnimatedLogo from './components/AnimatedLogo';
 import ThemeToggle from './components/ThemeToggle';
+import CommandPalette from './components/CommandPalette';
 import { useConversations } from './hooks/useConversations';
 import { useTokenBuffer } from './hooks/useTokenBuffer';
+import { useCommandPalette } from './hooks/useCommandPalette';
 import { ViewMode } from './types/appState';
 import { Conversation, Message as ConversationMessage } from './types/conversation';
 
@@ -32,6 +34,7 @@ function App() {
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { isOpen: isCommandPaletteOpen, close: closeCommandPalette } = useCommandPalette();
 
   const {
     bufferedContent,
@@ -175,20 +178,86 @@ function App() {
     setInputValue(suggestion);
   };
 
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setViewMode(prev => prev === ViewMode.CARDS ? ViewMode.CHAT : ViewMode.CARDS);
-      }
-    };
+  const clearMessages = () => {
+    setMessages([]);
+  };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
+  const exportConversation = () => {
+    const content = messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `conversation-${new Date().toISOString()}.txt`;
+    a.click();
+  };
+
+  const commands = useMemo(() => [
+    {
+      id: 'new-chat',
+      title: 'New Chat',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+      </svg>,
+      action: handleNewChat,
+      category: 'Chat',
+      keywords: ['create', 'start', 'begin']
+    },
+    {
+      id: 'view-all',
+      title: 'View All Conversations',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+      </svg>,
+      action: handleHomeClick,
+      category: 'Navigation',
+      keywords: ['home', 'list', 'conversations']
+    },
+    {
+      id: 'clear-chat',
+      title: 'Clear Current Chat',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>,
+      action: clearMessages,
+      category: 'Chat',
+      keywords: ['delete', 'remove', 'reset']
+    },
+    {
+      id: 'export',
+      title: 'Export Conversation',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+      </svg>,
+      action: exportConversation,
+      category: 'Chat',
+      keywords: ['download', 'save', 'backup']
+    },
+    {
+      id: 'search',
+      title: 'Search Conversations',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>,
+      action: () => {
+        setViewMode(ViewMode.CARDS);
+        setTimeout(() => {
+          document.querySelector<HTMLInputElement>('input[type="text"]')?.focus();
+        }, 100);
+      },
+      category: 'Navigation',
+      keywords: ['find', 'filter', 'look']
+    }
+  ], [handleNewChat, handleHomeClick, clearMessages, exportConversation]);
 
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={closeCommandPalette}
+        commands={commands}
+      />
+      
       <header className="border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
