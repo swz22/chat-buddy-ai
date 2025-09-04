@@ -46,8 +46,10 @@ function App() {
   const {
     conversations,
     loading: conversationsLoading,
+    loadConversation,
     deleteConversation,
-    searchConversations
+    searchConversations,
+    loadConversations
   } = useConversations(socket);
 
   const scrollToBottom = () => {
@@ -63,141 +65,134 @@ function App() {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
-      timeout: 20000
+      reconnectionAttempts: 5
     });
-    
+
     newSocket.on('connect', () => {
-      console.log('Connected to server');
       setConnected(true);
     });
 
     newSocket.on('disconnect', () => {
-      console.log('Disconnected from server');
       setConnected(false);
     });
 
     newSocket.on('chat:start', () => {
       setIsThinking(true);
-      setTimeout(() => {
-        setIsThinking(false);
-        setIsStreaming(true);
-        resetBuffer();
-      }, 800);
+      setIsStreaming(false);
+      resetBuffer();
     });
 
     newSocket.on('chat:token', (data: { token: string }) => {
+      setIsThinking(false);
+      setIsStreaming(true);
       addToken(data.token);
     });
 
-    newSocket.on('chat:complete', (data: { message: string }) => {
+    newSocket.on('chat:complete', (data: { message: string; conversationId: number }) => {
       forceFlush();
-      setTimeout(() => {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
-        setIsStreaming(false);
-        resetBuffer();
-      }, 100);
-    });
-
-    newSocket.on('chat:error', (data: { error: string }) => {
-      console.error('Chat error:', data.error);
-      setIsThinking(false);
+      setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
       setIsStreaming(false);
+      setIsThinking(false);
       resetBuffer();
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Sorry, I encountered an error. Please try again.' 
-      }]);
+      
+      if (data.conversationId && !currentConversationId) {
+        setCurrentConversationId(data.conversationId);
+      }
+      
+      if (socket) {
+        loadConversations();
+      }
     });
 
     newSocket.on('conversation:created', (data: { conversationId: number; title: string }) => {
       setCurrentConversationId(data.conversationId);
-      setViewMode(ViewMode.CHAT);
     });
 
     newSocket.on('conversation:loaded', (data: { conversation: Conversation; messages: ConversationMessage[] }) => {
-      console.log('Conversation loaded:', data);
       const chatMessages: ChatMessage[] = data.messages.map(msg => ({
         role: msg.role as 'user' | 'assistant',
         content: msg.content
       }));
       setMessages(chatMessages);
-      setCurrentConversationId(data.conversation.id);
+      setCurrentConversationId(data.conversation.id!);
       setViewMode(ViewMode.CHAT);
     });
 
-    newSocket.on('conversation:error', (data: { error: string }) => {
-      console.error('Conversation error:', data.error);
-      alert('Error loading conversation: ' + data.error);
+    newSocket.on('chat:error', (data: { error: string }) => {
+      console.error('Chat error:', data.error);
+      setIsStreaming(false);
+      setIsThinking(false);
     });
 
     setSocket(newSocket);
 
     return () => {
-      newSocket.removeAllListeners();
-      newSocket.close();
+      newSocket.disconnect();
     };
-  }, [addToken, forceFlush, resetBuffer]);
+  }, []);
 
   const sendMessage = (content: string) => {
-    if (!socket || !connected) return;
-
-    const newMessage: ChatMessage = { role: 'user', content };
-    const updatedMessages = [...messages, newMessage];
-    setMessages(updatedMessages);
-    setInputValue(''); // Clear the input value after sending
-
-    socket.emit('chat:message', { 
-      messages: updatedMessages,
-      conversationId: currentConversationId 
-    });
-
-    if (viewMode === ViewMode.CARDS) {
-      setViewMode(ViewMode.CHAT);
-    }
-  };
-
-  const handleSelectConversation = (conversationId: number) => {
+    const userMessage = { role: 'user' as const, content };
+    setMessages(prev => [...prev, userMessage]);
+    
     if (socket) {
-      socket.emit('conversation:load', { conversationId });
+      socket.emit('chat:message', {
+        messages: [...messages, userMessage],
+        conversationId: currentConversationId
+      });
     }
-    setCurrentConversationId(conversationId);
-  };
-
-  const handleDeleteConversation = (conversationId: number) => {
-    deleteConversation(conversationId);
-    if (currentConversationId === conversationId) {
-      setCurrentConversationId(null);
-      setMessages([]);
-      setViewMode(ViewMode.CARDS);
+    
+    if (viewMode !== ViewMode.CHAT) {
+      setViewMode(ViewMode.CHAT);
     }
   };
 
   const handleNewChat = () => {
     setMessages([]);
-    resetBuffer();
-    setIsStreaming(false);
-    setIsThinking(false);
     setCurrentConversationId(null);
+    setViewMode(ViewMode.CHAT);
+    setInputValue('');
+    resetBuffer();
+  };
+
+  const handleHomeClick = () => {
     setViewMode(ViewMode.CARDS);
+    loadConversations();
+  };
+
+  const handleSelectConversation = (conversationId: number) => {
+    loadConversation(conversationId);
+  };
+
+  const handleDeleteConversation = (conversationId: number) => {
+    deleteConversation(conversationId);
+    if (conversationId === currentConversationId) {
+      handleNewChat();
+    }
   };
 
   const handleSuggestionClick = (suggestion: string) => {
     setInputValue(suggestion);
   };
 
-  const handleHomeClick = () => {
-    setViewMode(ViewMode.CARDS);
-  };
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setViewMode(prev => prev === ViewMode.CARDS ? ViewMode.CHAT : ViewMode.CARDS);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <ConnectionStatus connected={connected} />
-      
-      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 px-4 py-3 shadow-sm relative z-10">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <header className="border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            {viewMode === ViewMode.CHAT ? (
+            {viewMode === ViewMode.CHAT && currentConversationId ? (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -210,7 +205,7 @@ function App() {
                 <span>All Chats</span>
               </motion.button>
             ) : (
-              <AnimatedLogo size="medium" />
+              <AnimatedLogo size="medium" isActive={isStreaming} />
             )}
             <h1 className="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
               Chat Buddy AI
