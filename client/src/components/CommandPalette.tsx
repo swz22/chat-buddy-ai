@@ -129,7 +129,7 @@ export default function CommandPalette({ isOpen, onClose, commands }: CommandPal
                       <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
                         {category}
                       </div>
-                      {cmds.map((cmd, idx) => {
+                      {cmds.map((cmd) => {
                         const globalIndex = filteredCommands.indexOf(cmd);
                         return (
                           <motion.button
