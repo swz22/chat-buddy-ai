@@ -11,6 +11,7 @@ import TimelineView from './components/TimelineView';
 import SearchBar from './components/SearchBar';
 import AnimatedTransition from './components/AnimatedTransition';
 import AnimatedLogo from './components/AnimatedLogo';
+import ThemeToggle from './components/ThemeToggle';
 import { useConversations } from './hooks/useConversations';
 import { useTokenBuffer } from './hooks/useTokenBuffer';
 import { ViewMode } from './types/appState';
@@ -212,7 +213,7 @@ function App() {
           </div>
           
           <div className="flex items-center space-x-4">
-            {/* <ThemeToggle /> */}
+            <ThemeToggle />
             
             <motion.button
               whileHover={{ scale: 1.05 }}
