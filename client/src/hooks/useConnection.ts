@@ -14,12 +14,13 @@ export function useConnection(options: UseConnectionOptions) {
   const [connected, setConnected] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [nextRetryIn, setNextRetryIn] = useState(0);
+  const maxRetries = options.maxRetries || 10;
   const connectionManager = useRef<ConnectionManager>();
   const retryIntervalRef = useRef<ReturnType<typeof setInterval>>();
 
   useEffect(() => {
     connectionManager.current = new ConnectionManager({
-      maxRetries: options.maxRetries || 10,
+      maxRetries: maxRetries,
       baseDelay: options.baseDelay || 1000,
       maxDelay: options.maxDelay || 30000,
     });
@@ -91,7 +92,7 @@ export function useConnection(options: UseConnectionOptions) {
       }
       socket.disconnect();
     };
-  }, [options.url, options.maxRetries, options.baseDelay, options.maxDelay]);
+  }, [options.url, maxRetries, options.baseDelay, options.maxDelay]);
 
   const reconnect = useCallback(() => {
     if (socket && !connected) {
@@ -104,7 +105,7 @@ export function useConnection(options: UseConnectionOptions) {
     socket,
     connected,
     retryCount,
-    maxRetries: connectionManager.current?.config.maxRetries || 10,
+    maxRetries,
     nextRetryIn,
     reconnect
   };
