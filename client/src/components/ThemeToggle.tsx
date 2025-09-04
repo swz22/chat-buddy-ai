@@ -5,10 +5,8 @@ export default function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme();
 
   const handleClick = () => {
-    const themes: ('light' | 'dark' | 'system')[] = ['light', 'dark', 'system'];
-    const currentIndex = themes.indexOf(theme);
-    const nextIndex = (currentIndex + 1) % themes.length;
-    setTheme(themes[nextIndex]);
+    // Toggle between light and dark only
+    setTheme(resolvedTheme === 'light' ? 'dark' : 'light');
   };
 
   return (
@@ -17,7 +15,7 @@ export default function ThemeToggle() {
       className="relative p-2 rounded-lg glass-button group"
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      title={`Theme: ${theme}`}
+      title={`Switch to ${resolvedTheme === 'light' ? 'dark' : 'light'} mode`}
     >
       <div className="relative w-5 h-5">
         <motion.svg
@@ -59,29 +57,6 @@ export default function ThemeToggle() {
             d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
           />
         </motion.svg>
-
-        {theme === 'system' && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            className="absolute inset-0 flex items-center justify-center"
-          >
-            <svg
-              className="w-5 h-5 text-gray-500 dark:text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-              />
-            </svg>
-          </motion.div>
-        )}
       </div>
       
       <motion.div
@@ -89,9 +64,7 @@ export default function ThemeToggle() {
         initial={{ y: -5 }}
         animate={{ y: 0 }}
       >
-        {theme === 'light' && 'Light mode'}
-        {theme === 'dark' && 'Dark mode'}
-        {theme === 'system' && 'System theme'}
+        {resolvedTheme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
       </motion.div>
     </motion.button>
   );
