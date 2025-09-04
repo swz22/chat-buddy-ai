@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import Message from './components/Message';
-import ChatInput from './components/ChatInput';
+import EnhancedChatInput from './components/EnhancedChatInput';
 import StreamingMessage from './components/StreamingMessage';
 import ThinkingAnimation from './components/ThinkingAnimation';
 import WelcomeScreen from './components/WelcomeScreen';
@@ -326,7 +326,7 @@ function App() {
                   loading={conversationsLoading}
                 />
               </div>
-              <ChatInput 
+              <EnhancedChatInput 
                 onSendMessage={sendMessage} 
                 disabled={!connected || isStreaming} 
                 initialValue={inputValue}
@@ -341,7 +341,12 @@ function App() {
                   ) : (
                     <>
                       {messages.map((msg, index) => (
-                        <Message key={index} role={msg.role} content={msg.content} />
+                        <Message 
+                          key={index} 
+                          role={msg.role} 
+                          content={msg.content}
+                          timestamp={new Date()}
+                        />
                       ))}
                       
                       <AnimatePresence mode="wait">
@@ -363,7 +368,7 @@ function App() {
                   )}
                 </div>
               </div>
-              <ChatInput 
+              <EnhancedChatInput 
                 onSendMessage={sendMessage} 
                 disabled={!connected || isStreaming || isThinking} 
                 initialValue={inputValue}
