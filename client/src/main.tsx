@@ -4,6 +4,7 @@ import App from './App';
 import { ThemeProvider } from './contexts/ThemeContext';
 import './index.css';
 import './styles/glassmorphism.css';
+import './styles/streaming.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
