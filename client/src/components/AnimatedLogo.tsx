@@ -85,9 +85,9 @@ export default function AnimatedLogo({ size = 'medium', animate = true, isActive
           rx="28"
           ry="12"
           stroke="url(#logoGradient)"
-          strokeWidth="0.5"
+          strokeWidth="1"
           fill="none"
-          opacity="0.3"
+          opacity="0.5"
           initial={{ rotate: 0 }}
           animate={animate ? { rotate: 360 } : {}}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}

@@ -212,6 +212,8 @@ function App() {
           </div>
           
           <div className="flex items-center space-x-4">
+            {/* <ThemeToggle /> */}
+            
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -223,7 +225,7 @@ function App() {
             
             <div className="flex items-center space-x-2">
               <div className={`w-2 h-2 rounded-full animate-pulse ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
                 {connected ? 'Online' : 'Offline'}
               </span>
             </div>
