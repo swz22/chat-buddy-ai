@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { fadeInUp, staggerContainer } from '../utils/animations';
 import SkeletonLoader from './SkeletonLoader';
 import { useState, useEffect } from 'react';
+import { useTypewriter } from '../hooks/useTypewriter';
 
 interface WelcomeScreenProps {
   onSuggestionClick?: (suggestion: string) => void;
@@ -9,6 +10,7 @@ interface WelcomeScreenProps {
 
 export default function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps) {
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   
   const suggestions = [
     "Explain quantum computing in simple terms",
@@ -17,10 +19,27 @@ export default function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps)
     "Help me debug my React code"
   ];
 
+  const { displayedText, isTyping, start } = useTypewriter({
+    text: selectedSuggestion || '',
+    speed: 30,
+    onComplete: () => {
+      if (selectedSuggestion && onSuggestionClick) {
+        setTimeout(() => {
+          onSuggestionClick(selectedSuggestion);
+        }, 200);
+      }
+    }
+  });
+
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
   }, []);
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setSelectedSuggestion(suggestion);
+    start();
+  };
 
   if (isLoading) {
     return <SkeletonLoader variant="chat" />;
@@ -106,22 +125,38 @@ export default function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps)
           transition={{ delay: 0.5 }}
         >
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">Try asking:</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {suggestions.map((suggestion, index) => (
-              <motion.button
-                key={index}
-                onClick={() => onSuggestionClick?.(suggestion)}
-                className="px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-all hover:scale-105"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 + index * 0.1 }}
-              >
-                {suggestion}
-              </motion.button>
-            ))}
-          </div>
+          
+          {isTyping ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-block px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full"
+            >
+              <span className="font-medium">{displayedText}</span>
+              <motion.span
+                animate={{ opacity: [1, 0] }}
+                transition={{ duration: 0.5, repeat: Infinity }}
+                className="inline-block w-0.5 h-4 bg-blue-600 dark:bg-blue-400 ml-1"
+              />
+            </motion.div>
+          ) : (
+            <div className="flex flex-wrap justify-center gap-2">
+              {suggestions.map((suggestion, index) => (
+                <motion.button
+                  key={index}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-all hover:scale-105 hover:shadow-md"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 + index * 0.1 }}
+                >
+                  {suggestion}
+                </motion.button>
+              ))}
+            </div>
+          )}
         </motion.div>
       </motion.div>
     </motion.div>
