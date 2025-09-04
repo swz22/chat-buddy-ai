@@ -2,61 +2,97 @@ import { motion } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 
 export default function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+
+  const handleClick = () => {
+    const themes: ('light' | 'dark' | 'system')[] = ['light', 'dark', 'system'];
+    const currentIndex = themes.indexOf(theme);
+    const nextIndex = (currentIndex + 1) % themes.length;
+    setTheme(themes[nextIndex]);
+  };
 
   return (
     <motion.button
-      onClick={toggleTheme}
-      className="relative w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 dark:from-blue-400/20 dark:to-purple-400/20 backdrop-blur-sm border border-white/20 dark:border-white/10 flex items-center justify-center group"
+      onClick={handleClick}
+      className="relative p-2 rounded-lg glass-button group"
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      initial={{ opacity: 0, scale: 0 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+      title={`Theme: ${theme}`}
     >
-      <motion.div
-        initial={false}
-        animate={{ rotate: theme === 'dark' ? 180 : 0 }}
-        transition={{ duration: 0.5, type: "spring", stiffness: 200 }}
-        className="relative w-6 h-6"
-      >
-        {theme === 'light' ? (
-          <svg
-            className="absolute inset-0 w-6 h-6 text-yellow-500"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+      <div className="relative w-5 h-5">
+        <motion.svg
+          className="absolute inset-0 w-5 h-5 text-amber-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          animate={{
+            opacity: resolvedTheme === 'light' ? 1 : 0,
+            rotate: resolvedTheme === 'light' ? 0 : 180,
+            scale: resolvedTheme === 'light' ? 1 : 0.5
+          }}
+          transition={{ duration: 0.3 }}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+          />
+        </motion.svg>
+        
+        <motion.svg
+          className="absolute inset-0 w-5 h-5 text-blue-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          animate={{
+            opacity: resolvedTheme === 'dark' ? 1 : 0,
+            rotate: resolvedTheme === 'dark' ? 0 : -180,
+            scale: resolvedTheme === 'dark' ? 1 : 0.5
+          }}
+          transition={{ duration: 0.3 }}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+          />
+        </motion.svg>
+
+        {theme === 'system' && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            className="absolute inset-0 flex items-center justify-center"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-            />
-          </svg>
-        ) : (
-          <svg
-            className="absolute inset-0 w-6 h-6 text-blue-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-            />
-          </svg>
+            <svg
+              className="w-5 h-5 text-gray-500 dark:text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
+            </svg>
+          </motion.div>
         )}
-      </motion.div>
+      </div>
       
       <motion.div
-        className="absolute inset-0 rounded-xl bg-gradient-to-br from-yellow-400/0 to-orange-400/0 dark:from-blue-400/0 dark:to-purple-400/0 group-hover:from-yellow-400/20 group-hover:to-orange-400/20 dark:group-hover:from-blue-400/20 dark:group-hover:to-purple-400/20"
-        initial={{ opacity: 0 }}
-        whileHover={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      />
+        className="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 text-xs bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap"
+        initial={{ y: -5 }}
+        animate={{ y: 0 }}
+      >
+        {theme === 'light' && 'Light mode'}
+        {theme === 'dark' && 'Dark mode'}
+        {theme === 'system' && 'System theme'}
+      </motion.div>
     </motion.button>
   );
 }
