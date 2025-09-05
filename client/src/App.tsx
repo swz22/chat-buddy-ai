@@ -93,9 +93,19 @@ function App() {
       addToken(data.token);
     });
 
-    newSocket.on('chat:complete', (data: { message: string; conversationId: number }) => {
+    newSocket.on('message:saved', (data: { tempId: number; messageId: number; conversationId: number }) => {
+      console.log('User message saved with ID:', data.messageId);
+      setMessages(prev => prev.map((msg, index) => 
+        index === prev.length - 1 && msg.role === 'user' 
+          ? { ...msg, id: data.messageId }
+          : msg
+      ));
+    });
+
+    newSocket.on('chat:complete', (data: { message: string; messageId?: number; conversationId: number }) => {
       forceFlush();
       setMessages(prev => [...prev, { 
+        id: data.messageId,
         role: 'assistant', 
         content: data.message,
         timestamp: new Date()

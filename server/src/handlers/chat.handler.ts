@@ -45,9 +45,19 @@ export class ChatHandler {
         
         this.userConversations.set(socket.id, conversationId);
         
+        // Save the user message and get its ID
+        let userMessageId: number | undefined;
         const lastMessage = data.messages[data.messages.length - 1];
         if (lastMessage && lastMessage.role === 'user') {
-          MessageModel.create(conversationId, 'user', lastMessage.content);
+          const savedMessage = MessageModel.create(conversationId, 'user', lastMessage.content);
+          userMessageId = savedMessage.id;
+          
+          // Emit the saved message with ID back to client
+          socket.emit('message:saved', {
+            tempId: data.messages.length - 1,
+            messageId: userMessageId,
+            conversationId
+          });
         }
         
         let fullResponse = '';
@@ -56,10 +66,11 @@ export class ChatHandler {
           socket.emit('chat:token', { token: chunk });
         }
         
-        MessageModel.create(conversationId, 'assistant', fullResponse);
+        const assistantMessage = MessageModel.create(conversationId, 'assistant', fullResponse);
         
         socket.emit('chat:complete', { 
           message: fullResponse,
+          messageId: assistantMessage.id,
           conversationId 
         });
       } catch (error) {
@@ -72,17 +83,23 @@ export class ChatHandler {
 
     socket.on('message:edit', (data: EditMessageData) => {
       try {
+        console.log('Received edit request:', data);
+        
         const message = MessageModel.findById(data.messageId);
         if (!message) {
+          console.error('Message not found:', data.messageId);
           socket.emit('message:edit:error', { error: 'Message not found' });
           return;
         }
         
+        // Save edit history
         MessageModel.saveEditHistory(data.messageId, message.content);
         
+        // Update the message
         const success = MessageModel.update(data.messageId, data.newContent);
         
         if (success) {
+          console.log('Message edited successfully');
           socket.emit('message:edited', { 
             messageId: data.messageId, 
             newContent: data.newContent,
