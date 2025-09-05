@@ -13,6 +13,8 @@ import AnimatedTransition from './components/AnimatedTransition';
 import AnimatedLogo from './components/AnimatedLogo';
 import ThemeToggle from './components/ThemeToggle';
 import CommandPalette from './components/CommandPalette';
+import KeyboardHint from './components/KeyboardHint';
+import OnboardingTips from './components/OnboardingTips';
 import { useConversations } from './hooks/useConversations';
 import { useTokenBuffer } from './hooks/useTokenBuffer';
 import { useCommandPalette } from './hooks/useCommandPalette';
@@ -28,56 +30,59 @@ interface ChatMessage {
 
 function App() {
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [connected, setConnected] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.CARDS);
+  const [connected, setConnected] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.CARDS);
   const [inputValue, setInputValue] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { isOpen: isCommandPaletteOpen, close: closeCommandPalette } = useCommandPalette();
-
-  const {
-    bufferedContent,
-    addToken,
-    forceFlush,
-    reset: resetBuffer
-  } = useTokenBuffer({
-    flushInterval: 50,
-    minBufferSize: 3
+  const [isFirstVisit] = useState(() => {
+    const hasVisited = localStorage.getItem('has-visited');
+    if (!hasVisited) {
+      localStorage.setItem('has-visited', 'true');
+      return true;
+    }
+    return false;
   });
-
-  const {
-    conversations,
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { 
+    bufferedContent, 
+    addToken, 
+    forceFlush, 
+    reset: resetBuffer 
+  } = useTokenBuffer();
+  
+  const { 
+    conversations, 
     loading: conversationsLoading,
     loadConversation,
     deleteConversation,
     searchConversations,
     loadConversations
   } = useConversations(socket);
+  
+  const {
+    isOpen: isCommandPaletteOpen,
+    close: closeCommandPalette,
+    toggle: toggleCommandPalette
+  } = useCommandPalette();
 
-  const scrollToBottom = () => {
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, [messages, bufferedContent, isThinking]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, bufferedContent, isStreaming, isThinking]);
-
-  useEffect(() => {
-    const newSocket = io('http://localhost:5000', {
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionAttempts: 5
-    });
+    const newSocket = io('http://localhost:5000');
 
     newSocket.on('connect', () => {
+      console.log('Connected to server');
       setConnected(true);
     });
 
     newSocket.on('disconnect', () => {
+      console.log('Disconnected from server');
       setConnected(false);
     });
 
@@ -93,22 +98,7 @@ function App() {
       addToken(data.token);
     });
 
-    newSocket.on('message:saved', (data: { tempId: number; messageId: number; conversationId: number }) => {
-      console.log('User message saved with ID:', data.messageId);
-      setMessages(prev => {
-        const updatedMessages = [...prev];
-        // Update the last user message with the ID from database
-        for (let i = updatedMessages.length - 1; i >= 0; i--) {
-          if (updatedMessages[i].role === 'user' && !updatedMessages[i].id) {
-            updatedMessages[i] = { ...updatedMessages[i], id: data.messageId };
-            break;
-          }
-        }
-        return updatedMessages;
-      });
-    });
-
-    newSocket.on('chat:complete', (data: { message: string; messageId?: number; conversationId: number }) => {
+    newSocket.on('chat:complete', (data: { message: string; messageId: number; conversationId: number }) => {
       forceFlush();
       setMessages(prev => [...prev, { 
         id: data.messageId,
@@ -120,11 +110,12 @@ function App() {
       setIsThinking(false);
       resetBuffer();
       
-      if (data.conversationId && !currentConversationId) {
+      if (data.conversationId) {
         setCurrentConversationId(data.conversationId);
       }
       
-      if (socket) {
+      // Call loadConversations after setting state
+      if (newSocket.connected) {
         loadConversations();
       }
     });
@@ -156,6 +147,8 @@ function App() {
     return () => {
       newSocket.disconnect();
     };
+    // Remove all function dependencies to prevent infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const sendMessage = (content: string) => {
@@ -239,18 +232,31 @@ function App() {
       action: () => setViewMode(ViewMode.CARDS),
       category: 'Navigation',
       keywords: ['home', 'browse', 'history']
+    },
+    {
+      id: 'toggle-theme',
+      title: 'Toggle Theme',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>,
+      action: () => document.documentElement.classList.toggle('dark'),
+      category: 'Settings',
+      keywords: ['dark', 'light', 'mode']
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   ], []);
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      {/* Onboarding Tips - Shows on first visit */}
+      {isFirstVisit && <OnboardingTips />}
+      
+      {/* Command Palette */}
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={closeCommandPalette}
         commands={commands}
       />
 
-      <header className="glass-gradient glass-noise border-b border-gray-200/50 dark:border-gray-700/50 backdrop-blur-xl">
+      <header className="glass-gradient glass-noise border-b border-gray-200/50 dark:border-gray-700/50 backdrop-blur-xl relative">
         <div className="max-w-full px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             {viewMode === ViewMode.CHAT && messages.length > 0 ? (
@@ -274,6 +280,18 @@ function App() {
           </div>
           
           <div className="flex items-center space-x-4">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={toggleCommandPalette}
+              className="p-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all"
+              title="Command Palette (⌘K)"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+            </motion.button>
+            
             <ThemeToggle />
             
             <motion.button
@@ -293,6 +311,9 @@ function App() {
             </div>
           </div>
         </div>
+        
+        {/* Keyboard Hint - Shows for new users */}
+        <KeyboardHint />
       </header>
 
       {viewMode === ViewMode.CHAT && conversations.length > 0 && (
