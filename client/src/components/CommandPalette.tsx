@@ -128,7 +128,7 @@ export default function CommandPalette({ isOpen, onClose, commands }: CommandPal
                       {category}
                     </div>
                     <div className="space-y-1">
-                      {cmds.map((cmd, index) => {
+                      {cmds.map((cmd) => {
                         const globalIndex = filteredCommands.indexOf(cmd);
                         return (
                           <motion.button
