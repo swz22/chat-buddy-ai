@@ -1,34 +1,22 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { ReactNode } from 'react';
+import { ViewMode } from '../types/appState';
 
 interface AnimatedTransitionProps {
+  mode: ViewMode;
   children: ReactNode;
-  mode: 'cards' | 'chat';
 }
 
-export default function AnimatedTransition({ children, mode }: AnimatedTransitionProps) {
+export default function AnimatedTransition({ mode, children }: AnimatedTransitionProps) {
   return (
     <AnimatePresence mode="wait">
       <motion.div
         key={mode}
-        initial={mode === 'chat' 
-          ? { opacity: 0, scale: 0.95, y: 20 }
-          : { opacity: 0, scale: 1.05 }
-        }
-        animate={{ 
-          opacity: 1, 
-          scale: 1,
-          y: 0 
-        }}
-        exit={mode === 'chat'
-          ? { opacity: 0, scale: 1.05 }
-          : { opacity: 0, scale: 0.95, y: 20 }
-        }
-        transition={{
-          duration: 0.3,
-          ease: [0.4, 0, 0.2, 1]
-        }}
-        className="h-full"
+        initial={{ opacity: 0, x: mode === ViewMode.CARDS ? -50 : 50 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: mode === ViewMode.CARDS ? 50 : -50 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        className="h-full w-full"
       >
         {children}
       </motion.div>
