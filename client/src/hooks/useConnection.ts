@@ -28,7 +28,7 @@ export function useConnection(options: UseConnectionOptions) {
     const createSocket = () => {
       const newSocket = io(options.url, {
         transports: ['websocket', 'polling'],
-        reconnection: false, // We'll handle reconnection manually
+        reconnection: false,
       });
 
       newSocket.on('connect', () => {
@@ -48,7 +48,6 @@ export function useConnection(options: UseConnectionOptions) {
         setConnected(false);
         
         if (reason === 'io server disconnect') {
-          // Server disconnected us, don't retry
           return;
         }
         
@@ -57,7 +56,6 @@ export function useConnection(options: UseConnectionOptions) {
           setRetryCount(connectionManager.current.getRetryCount() + 1);
           setNextRetryIn(delay);
           
-          // Update countdown
           let timeLeft = delay;
           retryIntervalRef.current = setInterval(() => {
             timeLeft -= 100;
@@ -69,8 +67,7 @@ export function useConnection(options: UseConnectionOptions) {
           }, 100);
           
           connectionManager.current.scheduleRetry(() => {
-            console.log('Attempting to reconnect...');
-            newSocket.connect();
+            createSocket();
           });
         }
       });
@@ -80,33 +77,34 @@ export function useConnection(options: UseConnectionOptions) {
       });
 
       setSocket(newSocket);
-      return newSocket;
     };
 
-    const socket = createSocket();
+    createSocket();
 
     return () => {
-      connectionManager.current?.cleanup();
       if (retryIntervalRef.current) {
         clearInterval(retryIntervalRef.current);
       }
-      socket.disconnect();
+      connectionManager.current?.cleanup();
+      socket?.disconnect();
     };
-  }, [options.url, maxRetries, options.baseDelay, options.maxDelay]);
+  }, [options.url]);
 
   const reconnect = useCallback(() => {
-    if (socket && !connected) {
-      connectionManager.current?.reset();
-      socket.connect();
-    }
-  }, [socket, connected]);
+    socket?.disconnect();
+    connectionManager.current?.reset();
+    setRetryCount(0);
+    setNextRetryIn(0);
+    const newSocket = io(options.url);
+    setSocket(newSocket);
+  }, [socket, options.url]);
 
   return {
     socket,
     connected,
     retryCount,
-    maxRetries,
     nextRetryIn,
-    reconnect
+    reconnect,
+    retryStatus: connectionManager.current?.getRetryStatus() || 'Unknown'
   };
 }
