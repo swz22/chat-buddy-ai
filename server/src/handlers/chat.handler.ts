@@ -45,14 +45,12 @@ export class ChatHandler {
         
         this.userConversations.set(socket.id, conversationId);
         
-        // Save the user message and get its ID
         let userMessageId: number | undefined;
         const lastMessage = data.messages[data.messages.length - 1];
         if (lastMessage && lastMessage.role === 'user') {
           const savedMessage = MessageModel.create(conversationId, 'user', lastMessage.content);
           userMessageId = savedMessage.id;
           
-          // Emit the saved message with ID back to client
           socket.emit('message:saved', {
             tempId: data.messages.length - 1,
             messageId: userMessageId,
@@ -87,73 +85,81 @@ export class ChatHandler {
         
         const message = MessageModel.findById(data.messageId);
         if (!message) {
-          console.error('Message not found:', data.messageId);
-          socket.emit('message:edit:error', { error: 'Message not found' });
+          socket.emit('message:edit:error', { 
+            error: 'Message not found' 
+          });
           return;
         }
         
-        // Save edit history
         MessageModel.saveEditHistory(data.messageId, message.content);
         
-        // Update the message
         const success = MessageModel.update(data.messageId, data.newContent);
         
         if (success) {
-          console.log('Message edited successfully');
-          socket.emit('message:edited', { 
-            messageId: data.messageId, 
+          socket.emit('message:edited', {
+            messageId: data.messageId,
             newContent: data.newContent,
             editedAt: new Date().toISOString()
           });
         } else {
-          socket.emit('message:edit:error', { error: 'Failed to edit message' });
+          socket.emit('message:edit:error', { 
+            error: 'Failed to update message' 
+          });
         }
       } catch (error) {
         console.error('Edit message error:', error);
-        socket.emit('message:edit:error', { error: 'Failed to edit message' });
-      }
-    });
-
-    socket.on('conversation:load', (data: { conversationId: number }) => {
-      try {
-        console.log('Loading conversation:', data.conversationId);
-        const conversation = ConversationModel.findById(data.conversationId);
-        if (!conversation) {
-          console.log('Conversation not found:', data.conversationId);
-          socket.emit('conversation:error', { error: 'Conversation not found' });
-          return;
-        }
-        
-        const messages = MessageModel.findByConversation(data.conversationId);
-        console.log(`Loaded ${messages.length} messages for conversation ${data.conversationId}`);
-        
-        socket.emit('conversation:loaded', {
-          conversation,
-          messages
+        socket.emit('message:edit:error', { 
+          error: 'Failed to edit message' 
         });
-      } catch (error) {
-        console.error('Load conversation error:', error);
-        socket.emit('conversation:error', { error: 'Failed to load conversation' });
       }
     });
 
     socket.on('conversations:list', () => {
       try {
-        const conversations = ConversationModel.findAll(20, 0);
+        const conversations = ConversationModel.findAll();
         socket.emit('conversations:listed', { conversations });
       } catch (error) {
         console.error('List conversations error:', error);
-        socket.emit('conversations:error', { error: 'Failed to list conversations' });
+        socket.emit('conversations:error', { 
+          error: 'Failed to load conversations' 
+        });
+      }
+    });
+
+    socket.on('conversation:load', (data: { conversationId: number }) => {
+      try {
+        const conversation = ConversationModel.findById(data.conversationId);
+        if (!conversation) {
+          socket.emit('conversation:error', { 
+            error: 'Conversation not found' 
+          });
+          return;
+        }
+        
+        const messages = MessageModel.findByConversation(data.conversationId);
+        socket.emit('conversation:loaded', { 
+          conversation, 
+          messages 
+        });
+      } catch (error) {
+        console.error('Load conversation error:', error);
+        socket.emit('conversation:error', { 
+          error: 'Failed to load conversation' 
+        });
       }
     });
 
     socket.on('conversation:delete', (data: { conversationId: number }) => {
       try {
         ConversationModel.delete(data.conversationId);
-        socket.emit('conversation:deleted', { conversationId: data.conversationId });
+        socket.emit('conversation:deleted', { 
+          conversationId: data.conversationId 
+        });
       } catch (error) {
         console.error('Delete conversation error:', error);
-        socket.emit('conversation:error', { error: 'Failed to delete conversation' });
+        socket.emit('conversation:error', { 
+          error: 'Failed to delete conversation' 
+        });
       }
     });
 
@@ -162,8 +168,10 @@ export class ChatHandler {
         const conversations = ConversationModel.search(data.query);
         socket.emit('conversations:searched', { conversations });
       } catch (error) {
-        console.error('Search error:', error);
-        socket.emit('conversations:error', { error: 'Failed to search conversations' });
+        console.error('Search conversations error:', error);
+        socket.emit('conversations:error', { 
+          error: 'Failed to search conversations' 
+        });
       }
     });
 
