@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import SkeletonLoader from './SkeletonLoader';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -11,12 +10,6 @@ interface SearchBarProps {
 export default function SearchBar({ onSearch, placeholder = "Search conversations...", loading = false }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsInitialLoad(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
@@ -32,10 +25,6 @@ export default function SearchBar({ onSearch, placeholder = "Search conversation
       (e.target as HTMLInputElement).blur();
     }
   };
-
-  if (isInitialLoad) {
-    return <SkeletonLoader variant="search" />;
-  }
 
   return (
     <motion.div
