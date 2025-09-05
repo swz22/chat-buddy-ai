@@ -8,6 +8,11 @@ interface ClientMessage {
   conversationId?: number;
 }
 
+interface EditMessageData {
+  messageId: number;
+  newContent: string;
+}
+
 export class ChatHandler {
   private openaiService: OpenAIService;
   private userConversations: Map<string, number> = new Map();
@@ -62,6 +67,33 @@ export class ChatHandler {
         socket.emit('chat:error', { 
           error: 'Failed to process message' 
         });
+      }
+    });
+
+    socket.on('message:edit', (data: EditMessageData) => {
+      try {
+        const message = MessageModel.findById(data.messageId);
+        if (!message) {
+          socket.emit('message:edit:error', { error: 'Message not found' });
+          return;
+        }
+        
+        MessageModel.saveEditHistory(data.messageId, message.content);
+        
+        const success = MessageModel.update(data.messageId, data.newContent);
+        
+        if (success) {
+          socket.emit('message:edited', { 
+            messageId: data.messageId, 
+            newContent: data.newContent,
+            editedAt: new Date().toISOString()
+          });
+        } else {
+          socket.emit('message:edit:error', { error: 'Failed to edit message' });
+        }
+      } catch (error) {
+        console.error('Edit message error:', error);
+        socket.emit('message:edit:error', { error: 'Failed to edit message' });
       }
     });
 
