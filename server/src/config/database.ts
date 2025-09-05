@@ -25,6 +25,7 @@ db.pragma('foreign_keys = ON');
 
 export function initializeDatabase() {
   try {
+    // Create base tables if they don't exist
     db.exec(`
       CREATE TABLE IF NOT EXISTS conversations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,12 +46,54 @@ export function initializeDatabase() {
       )
     `);
 
+    // Check if columns exist before trying to add them
+    const conversationColumns = db.prepare("PRAGMA table_info(conversations)").all();
+    const messageColumns = db.prepare("PRAGMA table_info(messages)").all();
+    
+    // Add pinned column if it doesn't exist
+    if (!conversationColumns.some((col: any) => col.name === 'pinned')) {
+      console.log('Adding pinned column to conversations table...');
+      db.exec('ALTER TABLE conversations ADD COLUMN pinned INTEGER DEFAULT 0');
+    }
+
+    // Add edited_at column if it doesn't exist
+    if (!messageColumns.some((col: any) => col.name === 'edited_at')) {
+      console.log('Adding edited_at column to messages table...');
+      db.exec('ALTER TABLE messages ADD COLUMN edited_at DATETIME');
+    }
+
+    // Create message_edits table if it doesn't exist
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS message_edits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        message_id INTEGER NOT NULL,
+        old_content TEXT NOT NULL,
+        edited_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (message_id) REFERENCES messages (id) ON DELETE CASCADE
+      )
+    `);
+
+    // Create indexes if they don't exist
     db.exec(`
       CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages(conversation_id)
     `);
     
     db.exec(`
       CREATE INDEX IF NOT EXISTS idx_conversations_updated_at ON conversations(updated_at)
+    `);
+
+    // Only create pinned index if the column exists
+    const hasPinnedColumn = db.prepare("PRAGMA table_info(conversations)").all()
+      .some((col: any) => col.name === 'pinned');
+    
+    if (hasPinnedColumn) {
+      db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_conversations_pinned ON conversations(pinned)
+      `);
+    }
+
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_message_edits_message_id ON message_edits(message_id)
     `);
 
     console.log('Database tables initialized successfully');

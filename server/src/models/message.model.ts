@@ -26,6 +26,22 @@ export class MessageModel {
     return stmt.all(conversationId) as Message[];
   }
 
+  static update(id: number, content: string): boolean {
+    const stmt = db.prepare(`
+      UPDATE messages 
+      SET content = ?, edited_at = CURRENT_TIMESTAMP 
+      WHERE id = ?
+    `);
+    const result = stmt.run(content, id);
+    
+    const message = this.findById(id);
+    if (message) {
+      ConversationModel.updateTimestamp(message.conversation_id);
+    }
+    
+    return result.changes > 0;
+  }
+
   static deleteByConversation(conversationId: number): void {
     const stmt = db.prepare('DELETE FROM messages WHERE conversation_id = ?');
     stmt.run(conversationId);
@@ -53,5 +69,22 @@ export class MessageModel {
     `);
     const searchPattern = `%${query}%`;
     return stmt.all(searchPattern, limit) as Message[];
+  }
+
+  static getEditHistory(messageId: number): any[] {
+    const stmt = db.prepare(`
+      SELECT * FROM message_edits 
+      WHERE message_id = ? 
+      ORDER BY edited_at DESC
+    `);
+    return stmt.all(messageId);
+  }
+
+  static saveEditHistory(messageId: number, oldContent: string): void {
+    const stmt = db.prepare(`
+      INSERT INTO message_edits (message_id, old_content, edited_at) 
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+    `);
+    stmt.run(messageId, oldContent);
   }
 }
