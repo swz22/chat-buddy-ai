@@ -232,12 +232,6 @@ export default function EditableMessage({
             {showFullTime ? getRelativeTimeString(timestamp) : formatDistanceToNow(timestamp)}
           </motion.div>
           
-          {messageId && (
-            <span className="text-xs text-gray-400 dark:text-gray-500">
-              ID: {messageId}
-            </span>
-          )}
-          
           <motion.div 
             className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
             initial={{ opacity: 0 }}
@@ -247,18 +241,12 @@ export default function EditableMessage({
               <button 
                 onClick={handleStartEdit}
                 className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                title="Edit message (Message must be saved to database)"
+                title="Edit message"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </button>
-            )}
-            
-            {isUser && !messageId && (
-              <span className="text-xs text-gray-400 italic px-2">
-                Not saved yet
-              </span>
             )}
             
             <button 

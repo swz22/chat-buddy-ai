@@ -95,11 +95,17 @@ function App() {
 
     newSocket.on('message:saved', (data: { tempId: number; messageId: number; conversationId: number }) => {
       console.log('User message saved with ID:', data.messageId);
-      setMessages(prev => prev.map((msg, index) => 
-        index === prev.length - 1 && msg.role === 'user' 
-          ? { ...msg, id: data.messageId }
-          : msg
-      ));
+      setMessages(prev => {
+        const updatedMessages = [...prev];
+        // Update the last user message with the ID from database
+        for (let i = updatedMessages.length - 1; i >= 0; i--) {
+          if (updatedMessages[i].role === 'user' && !updatedMessages[i].id) {
+            updatedMessages[i] = { ...updatedMessages[i], id: data.messageId };
+            break;
+          }
+        }
+        return updatedMessages;
+      });
     });
 
     newSocket.on('chat:complete', (data: { message: string; messageId?: number; conversationId: number }) => {
