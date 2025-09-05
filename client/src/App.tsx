@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
-import Message from './components/Message';
+import EditableMessage from './components/EditableMessage';
 import EnhancedChatInput from './components/EnhancedChatInput';
 import StreamingMessage from './components/StreamingMessage';
 import ThinkingAnimation from './components/ThinkingAnimation';
@@ -20,8 +20,10 @@ import { ViewMode } from './types/appState';
 import { Conversation, Message as ConversationMessage } from './types/conversation';
 
 interface ChatMessage {
+  id?: number;
   role: 'user' | 'assistant';
   content: string;
+  timestamp?: Date;
 }
 
 function App() {
@@ -93,7 +95,11 @@ function App() {
 
     newSocket.on('chat:complete', (data: { message: string; conversationId: number }) => {
       forceFlush();
-      setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: data.message,
+        timestamp: new Date()
+      }]);
       setIsStreaming(false);
       setIsThinking(false);
       resetBuffer();
@@ -113,8 +119,10 @@ function App() {
 
     newSocket.on('conversation:loaded', (data: { conversation: Conversation; messages: ConversationMessage[] }) => {
       const chatMessages: ChatMessage[] = data.messages.map(msg => ({
+        id: msg.id,
         role: msg.role as 'user' | 'assistant',
-        content: msg.content
+        content: msg.content,
+        timestamp: msg.created_at ? new Date(msg.created_at) : new Date()
       }));
       setMessages(chatMessages);
       setCurrentConversationId(data.conversation.id!);
@@ -135,7 +143,11 @@ function App() {
   }, []);
 
   const sendMessage = (content: string) => {
-    const userMessage = { role: 'user' as const, content };
+    const userMessage = { 
+      role: 'user' as const, 
+      content,
+      timestamp: new Date()
+    };
     setMessages(prev => [...prev, userMessage]);
     
     if (socket) {
@@ -179,6 +191,12 @@ function App() {
     if (viewMode !== ViewMode.CHAT) {
       setViewMode(ViewMode.CHAT);
     }
+  };
+
+  const handleMessageEdit = (index: number, newContent: string) => {
+    setMessages(prev => prev.map((msg, i) => 
+      i === index ? { ...msg, content: newContent } : msg
+    ));
   };
 
   const commands = useMemo(() => [
@@ -300,11 +318,14 @@ function App() {
                     <>
                       <AnimatePresence mode="popLayout">
                         {messages.map((message, index) => (
-                          <Message
-                            key={index}
+                          <EditableMessage
+                            key={`msg-${index}-${message.timestamp?.getTime()}`}
                             role={message.role}
                             content={message.content}
-                            timestamp={new Date()}
+                            timestamp={message.timestamp}
+                            messageId={message.id}
+                            socket={socket}
+                            onEdit={(newContent) => handleMessageEdit(index, newContent)}
                           />
                         ))}
                         
