@@ -29,6 +29,7 @@ export default function EditableMessage({
   const [editContent, setEditContent] = useState(initialContent);
   const [showFullTime, setShowFullTime] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showEditHint, setShowEditHint] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isUser = role === 'user';
 
@@ -84,6 +85,7 @@ export default function EditableMessage({
   const handleStartEdit = () => {
     setEditContent(content);
     setIsEditing(true);
+    setShowEditHint(false);
   };
 
   if (isEditing) {
@@ -115,15 +117,15 @@ export default function EditableMessage({
               ref={textareaRef}
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 focus:border-blue-500 focus:outline-none resize-none"
+              className="w-full px-4 py-3 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-2 border-blue-500 focus:border-blue-600 focus:outline-none resize-none"
               style={{ minHeight: '60px' }}
             />
             <div className="flex gap-2">
               <button
                 onClick={handleSave}
-                className="px-4 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                className="px-4 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
               >
-                Save
+                Save Changes
               </button>
               <button
                 onClick={handleCancel}
@@ -145,6 +147,8 @@ export default function EditableMessage({
       initial="initial"
       animate="animate"
       exit="exit"
+      onMouseEnter={() => isUser && setShowEditHint(true)}
+      onMouseLeave={() => setShowEditHint(false)}
     >
       <div className="flex-shrink-0">
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
@@ -165,12 +169,25 @@ export default function EditableMessage({
       
       <div className={`flex-1 max-w-3xl ${isUser ? 'items-end' : ''}`}>
         <div className={`
-          relative rounded-2xl px-4 py-3 shadow-sm
+          relative rounded-2xl px-4 py-3 shadow-sm transition-all
           ${isUser 
-            ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white ml-auto' 
+            ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white ml-auto hover:shadow-lg' 
             : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700'
           }
+          ${isUser && showEditHint ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}
         `}>
+          {/* Edit hint tooltip for user messages */}
+          {isUser && showEditHint && messageId && (
+            <motion.div
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="absolute -top-8 right-0 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap"
+            >
+              Click edit icon to modify message ✏️
+              <div className="absolute bottom-0 right-4 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-800"></div>
+            </motion.div>
+          )}
+
           {isUser ? (
             <p className="whitespace-pre-wrap">{content}</p>
           ) : (
@@ -213,29 +230,33 @@ export default function EditableMessage({
           </motion.div>
           
           <motion.div 
-            className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            className={`flex gap-1 ${isUser ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
             initial={{ opacity: 0 }}
             whileHover={{ opacity: 1 }}
           >
             {isUser && messageId && (
-              <button 
+              <motion.button 
                 onClick={handleStartEdit}
-                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                title="Edit message"
+                className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Edit this message"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-              </button>
+              </motion.button>
             )}
             
-            <button 
+            <motion.button 
               onClick={handleCopy}
-              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="p-1.5 text-gray-400 hover:text-green-500 dark:hover:text-green-400 transition-colors rounded hover:bg-gray-100 dark:hover:bg-gray-700"
               title="Copy message"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
             >
               {copied ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               ) : (
@@ -243,7 +264,7 @@ export default function EditableMessage({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
               )}
-            </button>
+            </motion.button>
           </motion.div>
         </div>
       </div>
