@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -16,14 +16,14 @@ interface EditableMessageProps {
   onEdit?: (newContent: string) => void;
 }
 
-export default function EditableMessage({ 
+const EditableMessage = forwardRef<HTMLDivElement, EditableMessageProps>(({ 
   role, 
   content: initialContent, 
   timestamp = new Date(),
   messageId,
   socket,
   onEdit
-}: EditableMessageProps) {
+}, ref) => {
   const [isEditing, setIsEditing] = useState(false);
   const [content, setContent] = useState(initialContent);
   const [editContent, setEditContent] = useState(initialContent);
@@ -91,6 +91,7 @@ export default function EditableMessage({
   if (isEditing) {
     return (
       <motion.div
+        ref={ref}
         className={`flex gap-3 mb-6 ${isUser ? 'flex-row-reverse' : ''}`}
         variants={messageVariants}
       >
@@ -142,6 +143,7 @@ export default function EditableMessage({
 
   return (
     <motion.div
+      ref={ref}
       className={`flex gap-3 mb-6 ${isUser ? 'flex-row-reverse' : ''} group`}
       variants={messageVariants}
       initial="initial"
@@ -270,4 +272,8 @@ export default function EditableMessage({
       </div>
     </motion.div>
   );
-}
+});
+
+EditableMessage.displayName = 'EditableMessage';
+
+export default EditableMessage;
