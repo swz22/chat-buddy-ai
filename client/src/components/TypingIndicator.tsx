@@ -1,57 +1,37 @@
 import { motion } from 'framer-motion';
 
-export default function TypingIndicator() {
+interface TypingIndicatorProps {
+  userName?: string;
+}
+
+export default function TypingIndicator({ userName = 'AI' }: TypingIndicatorProps) {
   return (
-    <motion.div 
-      className="flex justify-start mb-4"
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-      transition={{ duration: 0.3 }}
+    <motion.div
+      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-500 dark:text-gray-400"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.2 }}
     >
-      <div className="glass-morphism rounded-2xl px-4 py-3 shadow-lg">
-        <div className="flex space-x-1.5">
-          <motion.div 
-            className="w-2.5 h-2.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-            animate={{ 
-              y: [0, -8, 0],
-              scale: [1, 1.2, 1]
+      <div className="flex gap-1">
+        {[0, 0.2, 0.4].map((delay, index) => (
+          <motion.div
+            key={index}
+            className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full"
+            animate={{
+              y: [0, -6, 0],
+              opacity: [0.5, 1, 0.5]
             }}
-            transition={{ 
-              duration: 1.5,
+            transition={{
+              duration: 1.2,
               repeat: Infinity,
-              ease: "easeInOut",
-              delay: 0
+              delay,
+              ease: "easeInOut"
             }}
           />
-          <motion.div 
-            className="w-2.5 h-2.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
-            animate={{ 
-              y: [0, -8, 0],
-              scale: [1, 1.2, 1]
-            }}
-            transition={{ 
-              duration: 1.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 0.2
-            }}
-          />
-          <motion.div 
-            className="w-2.5 h-2.5 bg-gradient-to-r from-pink-500 to-orange-500 rounded-full"
-            animate={{ 
-              y: [0, -8, 0],
-              scale: [1, 1.2, 1]
-            }}
-            transition={{ 
-              duration: 1.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 0.4
-            }}
-          />
-        </div>
+        ))}
       </div>
+      <span className="italic">{userName} is typing...</span>
     </motion.div>
   );
 }
