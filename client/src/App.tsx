@@ -175,33 +175,10 @@ function App() {
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    // Set the message in the input
     setInputValue(suggestion);
-    
-    // Switch to chat view if not already there
     if (viewMode !== ViewMode.CHAT) {
       setViewMode(ViewMode.CHAT);
     }
-    
-    // Send the message directly
-    sendMessage(suggestion);
-  };
-
-  const clearMessages = () => {
-    setMessages([]);
-  };
-
-  const exportConversation = () => {
-    const content = messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `conversation-${new Date().toISOString()}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   const commands = useMemo(() => [
@@ -214,18 +191,10 @@ function App() {
       keywords: ['create', 'start', 'fresh']
     },
     {
-      id: 'export',
-      title: 'Export Conversation',
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>,
-      action: exportConversation,
-      category: 'Chat',
-      keywords: ['download', 'save']
-    },
-    {
-      id: 'clear',
+      id: 'clear-messages',
       title: 'Clear Messages',
       icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>,
-      action: clearMessages,
+      action: () => setMessages([]),
       category: 'Chat',
       keywords: ['delete', 'remove', 'reset']
     },

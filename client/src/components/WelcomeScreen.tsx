@@ -59,7 +59,7 @@ export default function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps)
               </svg>
               <span className="font-semibold text-gray-900 dark:text-gray-100">Real-time Streaming</span>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Experience smooth, token-by-token responses</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Instant responses with token streaming</p>
           </motion.div>
           
           <motion.div 
@@ -69,11 +69,11 @@ export default function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps)
           >
             <div className="flex items-center mb-2">
               <svg className="w-5 h-5 text-purple-600 dark:text-purple-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
               </svg>
-              <span className="font-semibold text-gray-900 dark:text-gray-100">Beautiful UI</span>
+              <span className="font-semibold text-gray-900 dark:text-gray-100">Smart Context</span>
             </div>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Modern interface with smooth animations</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Maintains conversation history</p>
           </motion.div>
           
           <motion.div 
@@ -118,7 +118,7 @@ export default function WelcomeScreen({ onSuggestionClick }: WelcomeScreenProps)
               <motion.button
                 key={index}
                 onClick={() => handleSuggestionClick(suggestion)}
-                className="text-left p-3 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-900/30 dark:hover:to-purple-900/30 border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 group"
+                className="text-left p-3 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 hover:from-blue-50 hover:to-purple-50 dark:hover:from-blue-900/30 dark:hover:to-purple-900/30 border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 group cursor-pointer"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 + index * 0.1 }}
