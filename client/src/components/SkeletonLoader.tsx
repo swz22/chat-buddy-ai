@@ -112,34 +112,14 @@ export default function SkeletonLoader({ variant = 'card', count = 6 }: Skeleton
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 + i * 0.1 }}
-                className="relative overflow-hidden bg-gray-100 dark:bg-gray-800 rounded-lg p-4"
+                className="relative overflow-hidden bg-gray-100 dark:bg-gray-800 rounded-lg p-4 h-20"
               >
-                <div className="flex items-center mb-2">
-                  <div className="relative overflow-hidden w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded mr-2">
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                      initial={{ x: -200 }}
-                      animate={{ x: 200 }}
-                      transition={shimmerTransition}
-                    />
-                  </div>
-                  <div className="relative overflow-hidden h-4 bg-gray-200 dark:bg-gray-700 rounded w-32">
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                      initial={{ x: -200 }}
-                      animate={{ x: 200 }}
-                      transition={shimmerTransition}
-                    />
-                  </div>
-                </div>
-                <div className="relative overflow-hidden h-3 bg-gray-200 dark:bg-gray-700 rounded w-full">
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                    initial={{ x: -200 }}
-                    animate={{ x: 200 }}
-                    transition={shimmerTransition}
-                  />
-                </div>
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                  initial={{ x: -200 }}
+                  animate={{ x: 200 }}
+                  transition={shimmerTransition}
+                />
               </motion.div>
             ))}
           </div>
@@ -176,94 +156,32 @@ export default function SkeletonLoader({ variant = 'card', count = 6 }: Skeleton
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
-            className="relative bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden"
+            className="relative bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden h-32"
           >
             <div className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="relative overflow-hidden w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg">
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                    initial={{ x: -200 }}
-                    animate={{ x: 200 }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 1.5,
-                      ease: "linear" as const,
-                      delay: i * 0.1
-                    }}
-                  />
-                </div>
-                <div className="flex-1">
-                  <div className="relative overflow-hidden h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2">
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                      initial={{ x: -200 }}
-                      animate={{ x: 200 }}
-                      transition={{
-                        repeat: Infinity,
-                        duration: 1.5,
-                        ease: "linear" as const,
-                        delay: i * 0.1 + 0.1
-                      }}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <div className="relative overflow-hidden h-3 bg-gray-200 dark:bg-gray-700 rounded w-full">
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                        initial={{ x: -200 }}
-                        animate={{ x: 200 }}
-                        transition={{
-                          repeat: Infinity,
-                          duration: 1.5,
-                          ease: "linear" as const,
-                          delay: i * 0.1 + 0.2
-                        }}
-                      />
-                    </div>
-                    <div className="relative overflow-hidden h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3">
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                        initial={{ x: -200 }}
-                        animate={{ x: 200 }}
-                        transition={{
-                          repeat: Infinity,
-                          duration: 1.5,
-                          ease: "linear" as const,
-                          delay: i * 0.1 + 0.3
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-between mt-3">
-                    <div className="relative overflow-hidden h-2 bg-gray-200 dark:bg-gray-700 rounded w-16">
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                        initial={{ x: -200 }}
-                        animate={{ x: 200 }}
-                        transition={{
-                          repeat: Infinity,
-                          duration: 1.5,
-                          ease: "linear" as const,
-                          delay: i * 0.1 + 0.4
-                        }}
-                      />
-                    </div>
-                    <div className="relative overflow-hidden h-2 bg-gray-200 dark:bg-gray-700 rounded w-20">
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                        initial={{ x: -200 }}
-                        animate={{ x: 200 }}
-                        transition={{
-                          repeat: Infinity,
-                          duration: 1.5,
-                          ease: "linear" as const,
-                          delay: i * 0.1 + 0.5
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
+              <div className="relative overflow-hidden h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-3">
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                  initial={{ x: -200 }}
+                  animate={{ x: 200 }}
+                  transition={shimmerTransition}
+                />
+              </div>
+              <div className="relative overflow-hidden h-3 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2">
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                  initial={{ x: -200 }}
+                  animate={{ x: 200 }}
+                  transition={shimmerTransition}
+                />
+              </div>
+              <div className="relative overflow-hidden h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3">
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                  initial={{ x: -200 }}
+                  animate={{ x: 200 }}
+                  transition={shimmerTransition}
+                />
               </div>
             </div>
           </motion.div>
