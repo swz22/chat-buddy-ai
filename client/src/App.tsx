@@ -175,7 +175,16 @@ function App() {
   };
 
   const handleSuggestionClick = (suggestion: string) => {
+    // Set the message in the input
     setInputValue(suggestion);
+    
+    // Switch to chat view if not already there
+    if (viewMode !== ViewMode.CHAT) {
+      setViewMode(ViewMode.CHAT);
+    }
+    
+    // Send the message directly
+    sendMessage(suggestion);
   };
 
   const clearMessages = () => {
@@ -189,79 +198,59 @@ function App() {
     const a = document.createElement('a');
     a.href = url;
     a.download = `conversation-${new Date().toISOString()}.txt`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const commands = useMemo(() => [
     {
       id: 'new-chat',
       title: 'New Chat',
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-      </svg>,
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>,
       action: handleNewChat,
       category: 'Chat',
-      keywords: ['create', 'start', 'begin']
+      keywords: ['create', 'start', 'fresh']
     },
     {
-      id: 'view-all',
-      title: 'View All Conversations',
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-      </svg>,
-      action: handleHomeClick,
-      category: 'Navigation',
-      keywords: ['home', 'list', 'conversations']
+      id: 'export',
+      title: 'Export Conversation',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>,
+      action: exportConversation,
+      category: 'Chat',
+      keywords: ['download', 'save']
     },
     {
-      id: 'clear-chat',
-      title: 'Clear Current Chat',
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-      </svg>,
+      id: 'clear',
+      title: 'Clear Messages',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>,
       action: clearMessages,
       category: 'Chat',
       keywords: ['delete', 'remove', 'reset']
     },
     {
-      id: 'export',
-      title: 'Export Conversation',
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-      </svg>,
-      action: exportConversation,
-      category: 'Chat',
-      keywords: ['download', 'save', 'backup']
-    },
-    {
-      id: 'search',
-      title: 'Search Conversations',
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>,
-      action: () => {
-        setViewMode(ViewMode.CARDS);
-        setTimeout(() => {
-          document.querySelector<HTMLInputElement>('input[type="text"]')?.focus();
-        }, 100);
-      },
+      id: 'view-cards',
+      title: 'View All Conversations',
+      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>,
+      action: () => setViewMode(ViewMode.CARDS),
       category: 'Navigation',
-      keywords: ['find', 'filter', 'look']
+      keywords: ['home', 'browse', 'history']
     }
-  ], [handleNewChat, handleHomeClick, clearMessages, exportConversation]);
+  ], []);
 
   return (
-    <div className="h-screen flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={closeCommandPalette}
         commands={commands}
       />
-      
-      <header className="border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+
+      <header className="glass-gradient glass-noise border-b border-gray-200/50 dark:border-gray-700/50 backdrop-blur-xl">
+        <div className="max-w-full px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            {viewMode === ViewMode.CHAT && currentConversationId ? (
+            {viewMode === ViewMode.CHAT && messages.length > 0 ? (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -340,37 +329,34 @@ function App() {
                     <WelcomeScreen onSuggestionClick={handleSuggestionClick} />
                   ) : (
                     <>
-                      {messages.map((msg, index) => (
-                        <Message 
-                          key={index} 
-                          role={msg.role} 
-                          content={msg.content}
-                          timestamp={new Date()}
-                        />
-                      ))}
-                      
-                      <AnimatePresence mode="wait">
-                        {isThinking && (
-                          <ThinkingAnimation key="thinking" />
-                        )}
+                      <AnimatePresence mode="popLayout">
+                        {messages.map((message, index) => (
+                          <Message
+                            key={index}
+                            role={message.role}
+                            content={message.content}
+                            timestamp={new Date()}
+                          />
+                        ))}
                         
-                        {isStreaming && !isThinking && (
-                          <StreamingMessage 
-                            key="streaming"
-                            content={bufferedContent} 
-                            isComplete={false} 
+                        {isThinking && <ThinkingAnimation />}
+                        
+                        {isStreaming && bufferedContent && (
+                          <StreamingMessage
+                            content={bufferedContent}
+                            isComplete={false}
                           />
                         )}
                       </AnimatePresence>
-                      
                       <div ref={messagesEndRef} />
                     </>
                   )}
                 </div>
               </div>
+              
               <EnhancedChatInput 
                 onSendMessage={sendMessage} 
-                disabled={!connected || isStreaming || isThinking} 
+                disabled={!connected || isStreaming} 
                 initialValue={inputValue}
               />
             </div>
