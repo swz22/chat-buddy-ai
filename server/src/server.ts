@@ -4,6 +4,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { ChatHandler } from './handlers/chat.handler';
+import { ConversationHandler } from './handlers/conversation.handler';
 import { initializeDatabase } from './config/database';
 
 dotenv.config();
@@ -40,8 +41,17 @@ try {
 }
 
 const chatHandler = new ChatHandler();
+const conversationHandler = new ConversationHandler();
+
 io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+  
   chatHandler.handleConnection(socket);
+  conversationHandler.handleConnection(socket);
+  
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
 });
 
 const PORT = process.env.PORT || 5000;
@@ -50,4 +60,5 @@ httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Database location: server/data/chat.db`);
+  console.log(`CORS origin: ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
 });
