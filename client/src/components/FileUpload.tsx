@@ -11,7 +11,7 @@ interface FileUploadProps {
 export default function FileUpload({ 
   onFileSelect, 
   acceptedTypes = ['.js', '.jsx', '.ts', '.tsx', '.py', '.java', '.cpp', '.c', '.html', '.css', '.json', '.md'],
-  maxSize = 10 * 1024 * 1024, // 10MB
+  maxSize = 10 * 1024 * 1024,
   multiple = true
 }: FileUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
@@ -98,46 +98,49 @@ export default function FileUpload({
   const getFileIcon = (fileName: string) => {
     const extension = fileName.split('.').pop()?.toLowerCase();
     const iconMap: Record<string, string> = {
-      js: '📜', jsx: '⚛️', ts: '📘', tsx: '⚛️',
-      py: '🐍', java: '☕', cpp: '⚙️', c: '⚙️',
-      html: '🌐', css: '🎨', json: '📋', md: '📝'
+      js: '📜',
+      jsx: '⚛️',
+      ts: '📘',
+      tsx: '⚛️',
+      py: '🐍',
+      java: '☕',
+      cpp: '⚙️',
+      c: '⚙️',
+      html: '🌐',
+      css: '🎨',
+      json: '📋',
+      md: '📝'
     };
     return iconMap[extension || ''] || '📄';
   };
 
   return (
-    <div className="relative">
+    <div className="w-full">
       <div
+        className={`relative border-2 border-dashed rounded-lg p-6 transition-all ${
+          isDragging 
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+            : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+        }`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        className={`
-          relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all
-          ${isDragging 
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-            : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
-          }
-        `}
       >
         <input
           ref={fileInputRef}
           type="file"
-          onChange={handleFileInput}
-          accept={acceptedTypes.join(',')}
-          multiple={multiple}
           className="hidden"
+          multiple={multiple}
+          accept={acceptedTypes.join(',')}
+          onChange={handleFileInput}
         />
 
-        <motion.div
-          animate={isDragging ? { scale: 1.1 } : { scale: 1 }}
-          className="flex flex-col items-center"
-        >
+        <div className="text-center">
           <svg 
-            className={`w-12 h-12 mb-3 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`}
-            fill="none" 
-            stroke="currentColor" 
+            className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
+            fill="none"
+            stroke="currentColor"
             viewBox="0 0 24 24"
           >
             <path 
@@ -148,13 +151,21 @@ export default function FileUpload({
             />
           </svg>
           
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-            {isDragging ? 'Drop files here' : 'Drag & drop files here or click to browse'}
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              Click to upload
+            </button>
+            {' '}or drag and drop
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-500">
-            Supported: {acceptedTypes.join(', ')}
+          
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {acceptedTypes.join(', ')} up to {maxSize / 1024 / 1024}MB
           </p>
-        </motion.div>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -163,12 +174,12 @@ export default function FileUpload({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute top-full mt-2 left-0 right-0 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg"
+            className="mt-2"
           >
             {errors.map((error, index) => (
-              <p key={index} className="text-xs text-red-600 dark:text-red-400">
+              <div key={index} className="text-sm text-red-600 dark:text-red-400">
                 {error}
-              </p>
+              </div>
             ))}
           </motion.div>
         )}
@@ -181,28 +192,26 @@ export default function FileUpload({
               key={index}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg"
+              exit={{ opacity: 0, x: 20 }}
+              className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
             >
-              <div className="flex items-center gap-2">
-                <span className="text-xl">{getFileIcon(file.name)}</span>
+              <div className="flex items-center space-x-3">
+                <span className="text-2xl">{getFileIcon(file.name)}</span>
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {file.name}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {(file.size / 1024).toFixed(1)} KB
+                    {(file.size / 1024).toFixed(2)} KB
                   </p>
                 </div>
               </div>
               
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeFile(index);
-                }}
+                onClick={() => removeFile(index)}
                 className="p-1 text-gray-400 hover:text-red-500 transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
