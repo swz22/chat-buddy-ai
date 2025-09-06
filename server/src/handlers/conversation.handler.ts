@@ -41,6 +41,7 @@ export class ConversationHandler {
 
     socket.on('conversation:delete', (data: { conversationId: number }) => {
       try {
+        MessageModel.deleteByConversation(data.conversationId);
         ConversationModel.delete(data.conversationId);
         socket.emit('conversation:deleted', { 
           conversationId: data.conversationId 

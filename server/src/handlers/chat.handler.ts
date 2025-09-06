@@ -15,7 +15,6 @@ interface EditMessageData {
 
 export class ChatHandler {
   private openaiService: OpenAIService;
-  private userConversations: Map<string, number> = new Map();
 
   constructor() {
     this.openaiService = new OpenAIService();
@@ -43,17 +42,13 @@ export class ChatHandler {
           });
         }
         
-        this.userConversations.set(socket.id, conversationId);
-        
-        let userMessageId: number | undefined;
         const lastMessage = data.messages[data.messages.length - 1];
         if (lastMessage && lastMessage.role === 'user') {
           const savedMessage = MessageModel.create(conversationId, 'user', lastMessage.content);
-          userMessageId = savedMessage.id;
           
           socket.emit('message:saved', {
             tempId: data.messages.length - 1,
-            messageId: userMessageId,
+            messageId: savedMessage.id,
             conversationId
           });
         }
@@ -81,8 +76,6 @@ export class ChatHandler {
 
     socket.on('message:edit', (data: EditMessageData) => {
       try {
-        console.log('Received edit request:', data);
-        
         const message = MessageModel.findById(data.messageId);
         if (!message) {
           socket.emit('message:edit:error', { 
@@ -112,71 +105,6 @@ export class ChatHandler {
           error: 'Failed to edit message' 
         });
       }
-    });
-
-    socket.on('conversations:list', () => {
-      try {
-        const conversations = ConversationModel.findAll();
-        socket.emit('conversations:listed', { conversations });
-      } catch (error) {
-        console.error('List conversations error:', error);
-        socket.emit('conversations:error', { 
-          error: 'Failed to load conversations' 
-        });
-      }
-    });
-
-    socket.on('conversation:load', (data: { conversationId: number }) => {
-      try {
-        const conversation = ConversationModel.findById(data.conversationId);
-        if (!conversation) {
-          socket.emit('conversation:error', { 
-            error: 'Conversation not found' 
-          });
-          return;
-        }
-        
-        const messages = MessageModel.findByConversation(data.conversationId);
-        socket.emit('conversation:loaded', { 
-          conversation, 
-          messages 
-        });
-      } catch (error) {
-        console.error('Load conversation error:', error);
-        socket.emit('conversation:error', { 
-          error: 'Failed to load conversation' 
-        });
-      }
-    });
-
-    socket.on('conversation:delete', (data: { conversationId: number }) => {
-      try {
-        ConversationModel.delete(data.conversationId);
-        socket.emit('conversation:deleted', { 
-          conversationId: data.conversationId 
-        });
-      } catch (error) {
-        console.error('Delete conversation error:', error);
-        socket.emit('conversation:error', { 
-          error: 'Failed to delete conversation' 
-        });
-      }
-    });
-
-    socket.on('conversations:search', (data: { query: string }) => {
-      try {
-        const conversations = ConversationModel.search(data.query);
-        socket.emit('conversations:searched', { conversations });
-      } catch (error) {
-        console.error('Search conversations error:', error);
-        socket.emit('conversations:error', { 
-          error: 'Failed to search conversations' 
-        });
-      }
-    });
-
-    socket.on('disconnect', () => {
-      this.userConversations.delete(socket.id);
     });
   }
 }
