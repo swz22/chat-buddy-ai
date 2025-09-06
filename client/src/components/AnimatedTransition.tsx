@@ -12,11 +12,12 @@ export default function AnimatedTransition({ mode, children }: AnimatedTransitio
     <AnimatePresence mode="wait">
       <motion.div
         key={mode}
-        initial={{ opacity: 0, x: mode === ViewMode.CARDS ? -50 : 50 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: mode === ViewMode.CARDS ? 50 : -50 }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="h-full w-full"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2, ease: 'easeInOut' }}
+        className="h-full"
+        style={{ position: 'relative' }}
       >
         {children}
       </motion.div>
