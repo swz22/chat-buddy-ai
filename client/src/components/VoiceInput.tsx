@@ -6,12 +6,58 @@ interface VoiceInputProps {
   disabled?: boolean;
 }
 
+interface SpeechRecognitionEvent {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent {
+  error: string;
+  message?: string;
+}
+
+interface SpeechRecognitionResult {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResultItem;
+  [index: number]: SpeechRecognitionResultItem;
+}
+
+interface SpeechRecognitionResultItem {
+  isFinal: boolean;
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface ISpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+  onend: () => void;
+  start: () => void;
+  stop: () => void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => ISpeechRecognition;
+    webkitSpeechRecognition: new () => ISpeechRecognition;
+  }
+}
+
 export default function VoiceInput({ onTranscript, disabled }: VoiceInputProps) {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [audioLevel, setAudioLevel] = useState(0);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animationFrameRef = useRef<number>();
@@ -22,14 +68,14 @@ export default function VoiceInput({ onTranscript, disabled }: VoiceInputProps) 
       return;
     }
 
-    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+    const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
     const recognition = new SpeechRecognition();
     
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       let final = '';
       let interim = '';
       
@@ -50,15 +96,15 @@ export default function VoiceInput({ onTranscript, disabled }: VoiceInputProps) 
       }
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error('Speech recognition error:', event.error);
       setIsListening(false);
     };
 
     recognition.onend = () => {
       setIsListening(false);
-      if (analyserRef.current) {
-        cancelAnimationFrame(animationFrameRef.current!);
+      if (analyserRef.current && animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
 
@@ -66,7 +112,11 @@ export default function VoiceInput({ onTranscript, disabled }: VoiceInputProps) 
 
     return () => {
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          console.error('Error stopping recognition:', e);
+        }
       }
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -74,99 +124,66 @@ export default function VoiceInput({ onTranscript, disabled }: VoiceInputProps) 
     };
   }, []);
 
-  const startListening = async () => {
-    if (disabled || !recognitionRef.current) return;
-
+  const setupAudioAnalyser = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioContextRef.current = new AudioContext();
-      const source = audioContextRef.current.createMediaStreamSource(stream);
       analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 256;
+      const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
-
-      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+      analyserRef.current.fftSize = 256;
       
-      const updateLevel = () => {
-        if (analyserRef.current && isListening) {
-          analyserRef.current.getByteFrequencyData(dataArray);
-          const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-          setAudioLevel(average / 255);
-          animationFrameRef.current = requestAnimationFrame(updateLevel);
+      const updateAudioLevel = () => {
+        if (!analyserRef.current) return;
+        
+        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+        analyserRef.current.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+        setAudioLevel(average / 255);
+        
+        if (isListening) {
+          animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
         }
       };
-
-      setIsListening(true);
-      setTranscript('');
-      setInterimTranscript('');
-      recognitionRef.current.start();
-      updateLevel();
+      
+      updateAudioLevel();
     } catch (error) {
-      console.error('Error accessing microphone:', error);
-    }
-  };
-
-  const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-      
-      if (transcript || interimTranscript) {
-        const finalText = transcript + interimTranscript;
-        onTranscript(finalText.trim());
-        setTranscript('');
-        setInterimTranscript('');
-      }
-      
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      
-      setAudioLevel(0);
+      console.error('Error setting up audio analyser:', error);
     }
   };
 
   const toggleListening = () => {
+    if (!recognitionRef.current || disabled) return;
+
     if (isListening) {
-      stopListening();
+      recognitionRef.current.stop();
+      setIsListening(false);
+      if (transcript) {
+        onTranscript(transcript);
+        setTranscript('');
+      }
     } else {
-      startListening();
+      recognitionRef.current.start();
+      setIsListening(true);
+      setupAudioAnalyser();
     }
   };
 
   return (
     <div className="relative">
       <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         onClick={toggleListening}
         disabled={disabled}
-        className={`
-          relative p-3 rounded-full transition-all
-          ${isListening 
-            ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30' 
-            : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
-          }
-          ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-        `}
-        whileHover={{ scale: disabled ? 1 : 1.05 }}
-        whileTap={{ scale: disabled ? 1 : 0.95 }}
+        className={`p-3 rounded-full transition-all ${
+          isListening 
+            ? 'bg-red-500 hover:bg-red-600 text-white' 
+            : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
-        {isListening && (
-          <motion.div
-            className="absolute inset-0 rounded-full bg-red-400"
-            animate={{
-              scale: [1, 1.2 + audioLevel * 0.5, 1],
-              opacity: [0.5, 0.2, 0.5]
-            }}
-            transition={{
-              duration: 1,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
-        )}
-        
         <svg 
-          className={`w-5 h-5 ${isListening ? 'text-white' : 'text-gray-600 dark:text-gray-300'}`}
+          className="w-5 h-5" 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
@@ -183,39 +200,28 @@ export default function VoiceInput({ onTranscript, disabled }: VoiceInputProps) 
       <AnimatePresence>
         {isListening && (
           <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 p-3 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 min-w-[250px] max-w-[400px]"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1 + audioLevel * 0.5, opacity: 0.3 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            className="absolute inset-0 rounded-full bg-red-500 pointer-events-none"
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {(transcript || interimTranscript) && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 min-w-[200px] max-w-[300px]"
           >
-            <div className="flex items-center gap-2 mb-2">
-              <div className="flex gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="w-1 bg-red-500 rounded-full"
-                    animate={{
-                      height: [8, 20 * (audioLevel + 0.2), 8],
-                    }}
-                    transition={{
-                      duration: 0.3,
-                      repeat: Infinity,
-                      delay: i * 0.1,
-                      ease: "easeInOut"
-                    }}
-                    style={{ minHeight: 8 }}
-                  />
-                ))}
-              </div>
-              <span className="text-xs text-red-500 font-medium">Listening...</span>
-            </div>
-            
-            {(transcript || interimTranscript) && (
-              <div className="text-sm text-gray-700 dark:text-gray-300">
-                <span>{transcript}</span>
-                <span className="text-gray-400 italic">{interimTranscript}</span>
-              </div>
-            )}
+            <p className="text-sm text-gray-900 dark:text-gray-100">
+              {transcript}
+              <span className="text-gray-500 dark:text-gray-400 italic">
+                {interimTranscript}
+              </span>
+            </p>
           </motion.div>
         )}
       </AnimatePresence>
