@@ -18,7 +18,7 @@ export function formatDistanceToNow(date: Date): string {
   
   const diffInDays = Math.floor(diffInHours / 24);
   if (diffInDays < 7) {
-    return diffInDays === 1 ? 'yesterday' : `${diffInDays} days ago`;
+    return diffInDays === 1 ? '1 day ago' : `${diffInDays} days ago`;
   }
   
   const diffInWeeks = Math.floor(diffInDays / 7);
@@ -37,9 +37,9 @@ export function formatDistanceToNow(date: Date): string {
 
 export function getRelativeTimeString(date: Date): string {
   const options: Intl.DateTimeFormatOptions = {
-    weekday: 'long',
+    weekday: 'short',
     year: 'numeric',
-    month: 'long',
+    month: 'short',
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
@@ -48,83 +48,50 @@ export function getRelativeTimeString(date: Date): string {
   return date.toLocaleDateString('en-US', options);
 }
 
-export function formatMessageTime(date: Date): string {
-  const now = new Date();
-  const isToday = date.toDateString() === now.toDateString();
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const isYesterday = date.toDateString() === yesterday.toDateString();
-  
-  if (isToday) {
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true 
-    });
-  }
-  
-  if (isYesterday) {
-    return `Yesterday at ${date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true 
-    })}`;
-  }
-  
-  const daysDiff = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-  if (daysDiff < 7) {
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  }
-  
-  return date.toLocaleDateString('en-US', { 
-    month: 'short',
-    day: 'numeric',
-    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
-    hour: 'numeric',
+export function formatTime(date: Date): string {
+  return date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
     minute: '2-digit',
     hour12: true
   });
 }
 
-export function groupMessagesByDate(messages: { timestamp: Date }[]): Map<string, typeof messages> {
-  const groups = new Map<string, typeof messages>();
-  const now = new Date();
-  const today = now.toDateString();
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayString = yesterday.toDateString();
-  
-  messages.forEach(message => {
-    const messageDate = message.timestamp.toDateString();
-    let groupKey: string;
-    
-    if (messageDate === today) {
-      groupKey = 'Today';
-    } else if (messageDate === yesterdayString) {
-      groupKey = 'Yesterday';
-    } else {
-      const daysDiff = Math.floor((now.getTime() - message.timestamp.getTime()) / (1000 * 60 * 60 * 24));
-      if (daysDiff < 7) {
-        groupKey = message.timestamp.toLocaleDateString('en-US', { weekday: 'long' });
-      } else {
-        groupKey = message.timestamp.toLocaleDateString('en-US', { 
-          month: 'long',
-          day: 'numeric',
-          year: message.timestamp.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-        });
-      }
-    }
-    
-    if (!groups.has(groupKey)) {
-      groups.set(groupKey, []);
-    }
-    groups.get(groupKey)!.push(message);
+export function formatDate(date: Date): string {
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
   });
+}
+
+export function isToday(date: Date): boolean {
+  const today = new Date();
+  return date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear();
+}
+
+export function isYesterday(date: Date): boolean {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  return date.getDate() === yesterday.getDate() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getFullYear() === yesterday.getFullYear();
+}
+
+export function isThisWeek(date: Date): boolean {
+  const now = new Date();
+  const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+  weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 7);
   
-  return groups;
+  return date >= weekStart && date < weekEnd;
+}
+
+export function getDateGroupLabel(date: Date): string {
+  if (isToday(date)) return 'Today';
+  if (isYesterday(date)) return 'Yesterday';
+  if (isThisWeek(date)) return 'This Week';
+  return 'Earlier';
 }
