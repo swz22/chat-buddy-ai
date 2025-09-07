@@ -1,90 +1,112 @@
-import db from '../config/database';
+import { db } from '../config/database';
 import { Message } from './conversation.model';
 import { ConversationModel } from './conversation.model';
 
 export class MessageModel {
-  static create(conversationId: number, role: Message['role'], content: string): Message {
-    const stmt = db.prepare(
-      'INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)'
-    );
-    const result = stmt.run(conversationId, role, content);
-    
-    ConversationModel.updateTimestamp(conversationId);
-    
-    return this.findById(result.lastInsertRowid as number)!;
-  }
-
-  static findById(id: number): Message | undefined {
-    const stmt = db.prepare('SELECT * FROM messages WHERE id = ?');
-    return stmt.get(id) as Message | undefined;
-  }
-
-  static findByConversation(conversationId: number): Message[] {
-    const stmt = db.prepare(
-      'SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC'
-    );
-    return stmt.all(conversationId) as Message[];
-  }
-
-  static update(id: number, content: string): boolean {
-    const stmt = db.prepare(`
-      UPDATE messages 
-      SET content = ?, edited_at = CURRENT_TIMESTAMP 
-      WHERE id = ?
-    `);
-    const result = stmt.run(content, id);
-    
-    const message = this.findById(id);
-    if (message) {
-      ConversationModel.updateTimestamp(message.conversation_id);
+  static async create(conversationId: number, role: Message['role'], content: string): Promise<Message> {
+    const client = await db.connect();
+    try {
+      const result = await client.query(
+        'INSERT INTO messages (conversation_id, role, content) VALUES ($1, $2, $3) RETURNING *',
+        [conversationId, role, content]
+      );
+      await ConversationModel.updateTimestamp(conversationId);
+      return result.rows[0];
+    } finally {
+      client.release();
     }
-    
-    return result.changes > 0;
   }
 
-  static deleteByConversation(conversationId: number): void {
-    const stmt = db.prepare('DELETE FROM messages WHERE conversation_id = ?');
-    stmt.run(conversationId);
+  static async findById(id: number): Promise<Message | undefined> {
+    const client = await db.connect();
+    try {
+      const result = await client.query(
+        'SELECT * FROM messages WHERE id = $1',
+        [id]
+      );
+      return result.rows[0];
+    } finally {
+      client.release();
+    }
   }
 
-  static getRecentMessages(limit = 50): Message[] {
-    const stmt = db.prepare(`
-      SELECT m.*, c.title as conversation_title 
-      FROM messages m
-      JOIN conversations c ON m.conversation_id = c.id
-      ORDER BY m.created_at DESC 
-      LIMIT ?
-    `);
-    return stmt.all(limit) as Message[];
+  static async findByConversation(conversationId: number): Promise<Message[]> {
+    const client = await db.connect();
+    try {
+      const result = await client.query(
+        'SELECT * FROM messages WHERE conversation_id = $1 ORDER BY created_at ASC',
+        [conversationId]
+      );
+      return result.rows;
+    } finally {
+      client.release();
+    }
   }
 
-  static searchInMessages(query: string, limit = 20): Message[] {
-    const stmt = db.prepare(`
-      SELECT m.*, c.title as conversation_title
-      FROM messages m
-      JOIN conversations c ON m.conversation_id = c.id
-      WHERE m.content LIKE ?
-      ORDER BY m.created_at DESC
-      LIMIT ?
-    `);
+  static async update(id: number, content: string): Promise<boolean> {
+    const client = await db.connect();
+    try {
+      const result = await client.query(
+        'UPDATE messages SET content = $1, edited_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [content, id]
+      );
+      
+      const message = await this.findById(id);
+      if (message) {
+        await ConversationModel.updateTimestamp(message.conversation_id);
+      }
+      
+      return result.rowCount! > 0;
+    } finally {
+      client.release();
+    }
+  }
+
+  static async deleteByConversation(conversationId: number): Promise<void> {
+    const client = await db.connect();
+    try {
+      await client.query(
+        'DELETE FROM messages WHERE conversation_id = $1',
+        [conversationId]
+      );
+    } finally {
+      client.release();
+    }
+  }
+
+  static async getRecentMessages(limit = 50): Promise<Message[]> {
+    const client = await db.connect();
+    try {
+      const result = await client.query(
+        `SELECT m.*, c.title as conversation_title 
+         FROM messages m
+         JOIN conversations c ON m.conversation_id = c.id
+         ORDER BY m.created_at DESC 
+         LIMIT $1`,
+        [limit]
+      );
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  }
+
+  static async searchInMessages(query: string, limit = 20): Promise<Message[]> {
     const searchPattern = `%${query}%`;
-    return stmt.all(searchPattern, limit) as Message[];
-  }
-
-  static getEditHistory(messageId: number): any[] {
-    const stmt = db.prepare(`
-      SELECT * FROM message_edits 
-      WHERE message_id = ? 
-      ORDER BY edited_at DESC
-    `);
-    return stmt.all(messageId);
-  }
-
-  static saveEditHistory(messageId: number, oldContent: string): void {
-    const stmt = db.prepare(`
-      INSERT INTO message_edits (message_id, old_content, edited_at) 
-      VALUES (?, ?, CURRENT_TIMESTAMP)
-    `);
-    stmt.run(messageId, oldContent);
+    const client = await db.connect();
+    try {
+      const result = await client.query(
+        `SELECT m.*, c.title as conversation_title
+         FROM messages m
+         JOIN conversations c ON m.conversation_id = c.id
+         WHERE m.content ILIKE $1
+         ORDER BY m.created_at DESC
+         LIMIT $2`,
+        [searchPattern, limit]
+      );
+      return result.rows;
+    } finally {
+      client.release();
+    }
   }
 }

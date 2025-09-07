@@ -8,11 +8,6 @@ interface ClientMessage {
   conversationId?: number;
 }
 
-interface EditMessageData {
-  messageId: number;
-  newContent: string;
-}
-
 export class ChatHandler {
   private openaiService: OpenAIService;
 
@@ -33,7 +28,7 @@ export class ChatHandler {
             ? ConversationModel.generateTitle(firstUserMessage.content)
             : 'New Conversation';
           
-          const conversation = ConversationModel.create(title);
+          const conversation = await ConversationModel.create(title);
           conversationId = conversation.id!;
           
           socket.emit('conversation:created', { 
@@ -42,51 +37,38 @@ export class ChatHandler {
           });
         }
         
-        const lastMessage = data.messages[data.messages.length - 1];
-        if (lastMessage && lastMessage.role === 'user') {
-          const savedMessage = MessageModel.create(conversationId, 'user', lastMessage.content);
-          
-          socket.emit('message:saved', {
-            tempId: data.messages.length - 1,
-            messageId: savedMessage.id,
-            conversationId
-          });
+        const lastUserMessage = data.messages[data.messages.length - 1];
+        if (lastUserMessage && lastUserMessage.role === 'user') {
+          await MessageModel.create(conversationId, 'user', lastUserMessage.content);
         }
         
         let fullResponse = '';
-        for await (const chunk of this.openaiService.streamChat(data.messages)) {
-          fullResponse += chunk;
-          socket.emit('chat:token', { token: chunk });
+        const stream = this.openaiService.streamChat(data.messages);
+        
+        for await (const token of stream) {
+          socket.emit('chat:token', { token });
+          fullResponse += token;
         }
         
-        const assistantMessage = MessageModel.create(conversationId, 'assistant', fullResponse);
+        const savedMessage = await MessageModel.create(conversationId, 'assistant', fullResponse);
         
         socket.emit('chat:complete', { 
           message: fullResponse,
-          messageId: assistantMessage.id,
+          messageId: savedMessage.id!,
           conversationId 
         });
+        
       } catch (error) {
         console.error('Chat error:', error);
         socket.emit('chat:error', { 
-          error: 'Failed to process message' 
+          error: error instanceof Error ? error.message : 'An error occurred' 
         });
       }
     });
 
-    socket.on('message:edit', (data: EditMessageData) => {
+    socket.on('message:edit', async (data: { messageId: number; newContent: string }) => {
       try {
-        const message = MessageModel.findById(data.messageId);
-        if (!message) {
-          socket.emit('message:edit:error', { 
-            error: 'Message not found' 
-          });
-          return;
-        }
-        
-        MessageModel.saveEditHistory(data.messageId, message.content);
-        
-        const success = MessageModel.update(data.messageId, data.newContent);
+        const success = await MessageModel.update(data.messageId, data.newContent);
         
         if (success) {
           socket.emit('message:edited', {
@@ -96,7 +78,7 @@ export class ChatHandler {
           });
         } else {
           socket.emit('message:edit:error', { 
-            error: 'Failed to update message' 
+            error: 'Message not found' 
           });
         }
       } catch (error) {
