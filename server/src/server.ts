@@ -1,14 +1,16 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load .env file FIRST before anything else
+dotenv.config({ path: path.join(__dirname, '../../.env') });
+
 import express from 'express';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import path from 'path';
 import { ChatHandler } from './handlers/chat.handler';
 import { ConversationHandler } from './handlers/conversation.handler';
 import { initializeDatabase } from './config/database';
-
-dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);

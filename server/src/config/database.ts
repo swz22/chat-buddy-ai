@@ -1,7 +1,16 @@
 import { Pool } from 'pg';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables from .env file
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 // Use PostgreSQL only
 const isProduction = process.env.NODE_ENV === 'production';
+
+// Debug: Log to see if DATABASE_URL is loaded
+console.log('DATABASE_URL loaded:', process.env.DATABASE_URL ? 'Yes' : 'No');
+console.log('Environment:', process.env.NODE_ENV);
 
 // For local development, you can use a local PostgreSQL or the Railway database
 const connectionString = process.env.DATABASE_URL || 'postgresql://localhost:5432/chatbuddy';
