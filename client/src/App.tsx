@@ -20,6 +20,7 @@ import { useTokenBuffer } from './hooks/useTokenBuffer';
 import { useCommandPalette } from './hooks/useCommandPalette';
 import { ViewMode } from './types/appState';
 import { Conversation, Message as ConversationMessage } from './types/conversation';
+import { API_URL } from './config/api';
 
 interface ChatMessage {
   id?: number;
@@ -74,7 +75,7 @@ function App() {
   }, [messages, bufferedContent, isThinking]);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:5000');
+    const newSocket = io(API_URL || 'https://chat-buddy-ai-production.up.railway.app');
 
     newSocket.on('connect', () => {
       console.log('Connected to server');
@@ -114,7 +115,6 @@ function App() {
         setCurrentConversationId(data.conversationId);
       }
       
-      // Call loadConversations after setting state
       if (newSocket.connected) {
         loadConversations();
       }
@@ -147,8 +147,6 @@ function App() {
     return () => {
       newSocket.disconnect();
     };
-    // Remove all function dependencies to prevent infinite loops
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const sendMessage = (content: string) => {
@@ -241,15 +239,12 @@ function App() {
       category: 'Settings',
       keywords: ['dark', 'light', 'mode']
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   ], []);
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Onboarding Tips - Shows on first visit */}
       {isFirstVisit && <OnboardingTips />}
       
-      {/* Command Palette */}
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={closeCommandPalette}
@@ -312,7 +307,6 @@ function App() {
           </div>
         </div>
         
-        {/* Keyboard Hint - Shows for new users */}
         <KeyboardHint />
       </header>
 
