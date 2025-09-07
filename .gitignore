@@ -15,12 +15,16 @@ build/
 data/
 server/data/
 
-# Environment variables
+# Environment variables - NEVER COMMIT THESE
 .env
 .env.local
+.env.development
 .env.development.local
+.env.test
 .env.test.local
+.env.production
 .env.production.local
+*.env
 
 # Logs
 logs/
@@ -73,3 +77,6 @@ desktop.ini
 # TypeScript
 *.tsbuildinfo
 .tsc_cache/
+
+# Railway
+.railway/
