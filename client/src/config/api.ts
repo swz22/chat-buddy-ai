@@ -2,7 +2,7 @@ const isDevelopment = import.meta.env.MODE === 'development';
 
 export const API_URL = isDevelopment 
   ? 'http://localhost:5000'
-  : (import.meta.env.VITE_API_URL as string) || 'https://chat-buddy-backend.railway.app';
+  : 'https://chat-buddy-ai-production.up.railway.app';
 
 export const SOCKET_OPTIONS = {
   transports: ['websocket', 'polling'],
