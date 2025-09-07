@@ -4,9 +4,9 @@ import { MessageModel } from '../models/message.model';
 
 export class ConversationHandler {
   handleConnection(socket: Socket) {
-    socket.on('conversations:list', () => {
+    socket.on('conversations:list', async () => {
       try {
-        const conversations = ConversationModel.findAll(50, 0);
+        const conversations = await ConversationModel.findAll(50, 0);
         socket.emit('conversations:listed', { conversations });
       } catch (error) {
         console.error('List conversations error:', error);
@@ -16,9 +16,9 @@ export class ConversationHandler {
       }
     });
 
-    socket.on('conversation:load', (data: { conversationId: number }) => {
+    socket.on('conversation:load', async (data: { conversationId: number }) => {
       try {
-        const conversation = ConversationModel.findById(data.conversationId);
+        const conversation = await ConversationModel.findById(data.conversationId);
         if (!conversation) {
           socket.emit('conversation:error', { 
             error: 'Conversation not found' 
@@ -26,7 +26,7 @@ export class ConversationHandler {
           return;
         }
         
-        const messages = MessageModel.findByConversation(data.conversationId);
+        const messages = await MessageModel.findByConversation(data.conversationId);
         socket.emit('conversation:loaded', { 
           conversation, 
           messages 
@@ -39,10 +39,10 @@ export class ConversationHandler {
       }
     });
 
-    socket.on('conversation:delete', (data: { conversationId: number }) => {
+    socket.on('conversation:delete', async (data: { conversationId: number }) => {
       try {
-        MessageModel.deleteByConversation(data.conversationId);
-        ConversationModel.delete(data.conversationId);
+        await MessageModel.deleteByConversation(data.conversationId);
+        await ConversationModel.delete(data.conversationId);
         socket.emit('conversation:deleted', { 
           conversationId: data.conversationId 
         });
@@ -54,9 +54,9 @@ export class ConversationHandler {
       }
     });
 
-    socket.on('conversations:search', (data: { query: string }) => {
+    socket.on('conversations:search', async (data: { query: string }) => {
       try {
-        const conversations = ConversationModel.search(data.query, 20);
+        const conversations = await ConversationModel.search(data.query, 20);
         socket.emit('conversations:searched', { conversations });
       } catch (error) {
         console.error('Search conversations error:', error);
@@ -66,10 +66,10 @@ export class ConversationHandler {
       }
     });
 
-    socket.on('conversation:update', (data: { conversationId: number; title: string }) => {
+    socket.on('conversation:update', async (data: { conversationId: number; title: string }) => {
       try {
-        ConversationModel.update(data.conversationId, data.title);
-        const updated = ConversationModel.findById(data.conversationId);
+        await ConversationModel.update(data.conversationId, data.title);
+        const updated = await ConversationModel.findById(data.conversationId);
         socket.emit('conversation:updated', { conversation: updated });
       } catch (error) {
         console.error('Update conversation error:', error);
@@ -79,9 +79,9 @@ export class ConversationHandler {
       }
     });
 
-    socket.on('messages:recent', (data: { limit?: number }) => {
+    socket.on('messages:recent', async (data: { limit?: number }) => {
       try {
-        const messages = MessageModel.getRecentMessages(data.limit || 50);
+        const messages = await MessageModel.getRecentMessages(data.limit || 50);
         socket.emit('messages:recent:loaded', { messages });
       } catch (error) {
         console.error('Load recent messages error:', error);
@@ -91,9 +91,9 @@ export class ConversationHandler {
       }
     });
 
-    socket.on('messages:search', (data: { query: string; limit?: number }) => {
+    socket.on('messages:search', async (data: { query: string; limit?: number }) => {
       try {
-        const messages = MessageModel.searchInMessages(data.query, data.limit || 20);
+        const messages = await MessageModel.searchInMessages(data.query, data.limit || 20);
         socket.emit('messages:searched', { messages });
       } catch (error) {
         console.error('Search messages error:', error);

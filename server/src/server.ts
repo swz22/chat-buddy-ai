@@ -29,36 +29,44 @@ app.use(express.json());
 app.get('/health', (_req, res) => {
   res.json({ 
     status: 'healthy', 
-    timestamp: new Date().toISOString() 
+    timestamp: new Date().toISOString(),
+    database: process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite'
   });
 });
 
-try {
-  initializeDatabase();
-} catch (error) {
-  console.error('Failed to initialize database:', error);
-  process.exit(1);
+// Async initialization
+async function startServer() {
+  try {
+    await initializeDatabase();
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
+    process.exit(1);
+  }
+
+  const chatHandler = new ChatHandler();
+  const conversationHandler = new ConversationHandler();
+
+  io.on('connection', (socket) => {
+    console.log('Client connected:', socket.id);
+    
+    chatHandler.handleConnection(socket);
+    conversationHandler.handleConnection(socket);
+    
+    socket.on('disconnect', () => {
+      console.log('Client disconnected:', socket.id);
+    });
+  });
+
+  const PORT = process.env.PORT || 5000;
+
+  httpServer.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Database: ${process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite'}`);
+    console.log(`CORS origin: ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
+  });
 }
 
-const chatHandler = new ChatHandler();
-const conversationHandler = new ConversationHandler();
-
-io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
-  
-  chatHandler.handleConnection(socket);
-  conversationHandler.handleConnection(socket);
-  
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-  });
-});
-
-const PORT = process.env.PORT || 5000;
-
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Database location: server/data/chat.db`);
-  console.log(`CORS origin: ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
-});
+// Start the server
+startServer();
