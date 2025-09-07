@@ -1,0 +1,17 @@
+[phases.setup]
+nixPkgs = ["nodejs-18_x", "npm-9_x", "python3"]
+
+[phases.install]
+cmds = ["npm install --prefix server", "npm install --prefix client"]
+
+[phases.build]
+cmds = [
+    "npm run build:server",
+    "npm run build:client"
+]
+
+[start]
+cmd = "npm start"
+
+[variables]
+NODE_ENV = "production"
