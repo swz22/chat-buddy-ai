@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import { ChatHandler } from './handlers/chat.handler';
 import { ConversationHandler } from './handlers/conversation.handler';
 import { initializeDatabase } from './config/database';
@@ -26,12 +27,21 @@ app.use(cors({
 
 app.use(express.json());
 
+// Serve static files from React build
+const clientPath = path.join(__dirname, '../../client/dist');
+app.use(express.static(clientPath));
+
 app.get('/health', (_req, res) => {
   res.json({ 
     status: 'healthy', 
     timestamp: new Date().toISOString(),
     database: process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite'
   });
+});
+
+// Serve React app for all other routes
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(clientPath, 'index.html'));
 });
 
 // Async initialization
@@ -65,6 +75,7 @@ async function startServer() {
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`Database: ${process.env.DATABASE_URL ? 'PostgreSQL' : 'SQLite'}`);
     console.log(`CORS origin: ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
+    console.log(`Serving static files from: ${clientPath}`);
   });
 }
 
