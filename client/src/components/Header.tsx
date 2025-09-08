@@ -24,6 +24,7 @@ export default function Header({ onNewChat, onToggleCommandPalette }: HeaderProp
             <KeyboardHint 
               keys={['⌘', 'K']}
               onClick={onToggleCommandPalette}
+              label="Command"
             />
             
             <motion.button
