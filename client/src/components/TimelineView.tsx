@@ -70,10 +70,10 @@ export default function TimelineView({
           <div className="flex gap-1">
             {canScrollLeft && (
               <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
                 onClick={() => scrollToDirection('left')}
-                className="p-1 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm transition-colors"
+                className="p-1 rounded bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
               >
                 <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -82,10 +82,10 @@ export default function TimelineView({
             )}
             {canScrollRight && (
               <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
                 onClick={() => scrollToDirection('right')}
-                className="p-1 rounded-lg bg-white/80 dark:bg-gray-800/80 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm transition-colors"
+                className="p-1 rounded bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 transition-colors"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
               >
                 <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -94,72 +94,50 @@ export default function TimelineView({
             )}
           </div>
         </div>
-        
+
         <div 
           ref={scrollContainerRef}
-          className="flex gap-3 overflow-x-auto scrollbar-hide pb-2"
+          className="flex gap-2 overflow-x-auto scrollbar-hide pb-2"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {conversations.slice(0, 15).map((conversation, index) => {
-            const isActive = conversation.id === currentConversationId;
-            const timeAgo = formatDistanceToNow(new Date(conversation.updated_at));
-            
-            return (
-              <motion.div
-                key={conversation.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-                whileHover={{ y: -2, transition: { duration: 0.2 } }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => onSelectConversation(conversation.id!)}
-                className={`
-                  relative flex-shrink-0 cursor-pointer rounded-xl
-                  transition-all duration-200
-                  flex items-start gap-3 p-3 min-w-[220px] max-w-[280px]
-                  ${isActive 
-                    ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-2 border-blue-200 dark:border-blue-600 shadow-md' 
-                    : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 hover:shadow-md'
-                  }
-                `}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTimelineIndicator"
-                    className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-blue-500 rounded-full"
-                  />
-                )}
-                
-                <div className={`
-                  flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center
-                  ${isActive 
-                    ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' 
-                    : 'bg-white dark:bg-gray-800'
-                  }
-                `}>
-                  <span className="text-lg">
-                    {getEmoji(conversation.title)}
-                  </span>
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <h4 className={`text-sm font-medium truncate ${
-                    isActive ? 'text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-200'
+          {conversations.slice(0, 20).map((conversation, index) => (
+            <motion.div
+              key={conversation.id}
+              onClick={() => onSelectConversation(conversation.id)}
+              className={`
+                flex-shrink-0 px-4 py-2 rounded-lg cursor-pointer transition-all
+                ${currentConversationId === conversation.id
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg'
+                  : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                }
+              `}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.02 }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{getEmoji(conversation.title)}</span>
+                <div className="min-w-0">
+                  <h3 className={`text-sm font-medium truncate max-w-[150px] ${
+                    currentConversationId === conversation.id 
+                      ? 'text-white' 
+                      : 'text-gray-900 dark:text-gray-100'
                   }`}>
                     {conversation.title}
-                  </h4>
-                  <div className={`text-xs mt-1 ${
-                    isActive ? 'text-gray-600 dark:text-gray-300' : 'text-gray-500 dark:text-gray-400'
+                  </h3>
+                  <p className={`text-xs ${
+                    currentConversationId === conversation.id 
+                      ? 'text-white/80' 
+                      : 'text-gray-500 dark:text-gray-400'
                   }`}>
-                    <span>{timeAgo}</span>
-                    {conversation.messageCount && conversation.messageCount > 0 && (
-                      <span className="ml-2">• {conversation.messageCount} messages</span>
-                    )}
-                  </div>
+                    {formatDistanceToNow(new Date(conversation.updated_at))}
+                  </p>
                 </div>
-              </motion.div>
-            );
-          })}
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </div>
