@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import AnimatedLogo from './AnimatedLogo';
+import Logo from './Logo';
 import { Conversation } from '../types/conversation';
 import { formatDistanceToNow } from '../utils/dateHelpers';
 
@@ -54,7 +54,17 @@ export default function Sidebar({
         className="fixed left-0 top-0 h-full w-72 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-50 overflow-hidden flex flex-col"
       >
         <div className="p-4 border-b border-gray-200 dark:border-gray-800">
-          <AnimatedLogo />
+          <div className="flex items-center gap-3">
+            <Logo size="small" />
+            <div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
+                Chat Buddy AI
+              </h1>
+              <p className="text-xs text-gray-600 dark:text-gray-400 -mt-1">
+                Powered by OpenAI
+              </p>
+            </div>
+          </div>
         </div>
         
         <div className="p-4">
@@ -81,17 +91,20 @@ export default function Sidebar({
               <motion.button
                 key={conv.id}
                 onClick={() => onSelectConversation(conv.id!)}
-                className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                className={`w-full text-left p-3 rounded-lg transition-all ${
                   currentConversationId === conv.id
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'
+                    ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800'
+                    : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                 }`}
                 whileHover={{ x: 4 }}
+                whileTap={{ scale: 0.98 }}
               >
                 <div className="flex items-start gap-2">
-                  <span className="text-lg mt-0.5">{getEmoji(conv.title)}</span>
+                  <span className="text-xl">{getEmoji(conv.title)}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{conv.title}</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {conv.title}
+                    </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {formatDistanceToNow(new Date(conv.updated_at))}
                     </p>
