@@ -1,19 +1,19 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import AnimatedBackground from './components/AnimatedBackground';
+import AnimatedLogo from './components/AnimatedLogo';
+import ThemeToggle from './components/ThemeToggle';
+import KeyboardHint from './components/KeyboardHint';
 import EditableMessage from './components/EditableMessage';
 import EnhancedChatInput from './components/EnhancedChatInput';
 import StreamingMessage from './components/StreamingMessage';
 import ThinkingAnimation from './components/ThinkingAnimation';
 import WelcomeScreen from './components/WelcomeScreen';
-import ConversationCards from './components/ConversationCards';
+import PremiumConversationCards from './components/PremiumConversationCards';
 import TimelineView from './components/TimelineView';
 import SearchBar from './components/SearchBar';
-import AnimatedTransition from './components/AnimatedTransition';
-import AnimatedLogo from './components/AnimatedLogo';
-import ThemeToggle from './components/ThemeToggle';
 import CommandPalette from './components/CommandPalette';
-import KeyboardHint from './components/KeyboardHint';
 import OnboardingTips from './components/OnboardingTips';
 import { useConversations } from './hooks/useConversations';
 import { useTokenBuffer } from './hooks/useTokenBuffer';
@@ -38,6 +38,7 @@ function App() {
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.CARDS);
   const [inputValue, setInputValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isFirstVisit] = useState(() => {
     const hasVisited = localStorage.getItem('has-visited');
     if (!hasVisited) {
@@ -75,7 +76,7 @@ function App() {
   }, [messages, bufferedContent, isThinking]);
 
   useEffect(() => {
-    const newSocket = io(API_URL || 'https://chat-buddy-ai-production.up.railway.app');
+    const newSocket = io(API_URL || 'http://localhost:5000');
 
     newSocket.on('connect', () => {
       console.log('Connected to server');
@@ -136,12 +137,6 @@ function App() {
       setViewMode(ViewMode.CHAT);
     });
 
-    newSocket.on('chat:error', (data: { error: string }) => {
-      console.error('Chat error:', data.error);
-      setIsStreaming(false);
-      setIsThinking(false);
-    });
-
     setSocket(newSocket);
 
     return () => {
@@ -149,24 +144,34 @@ function App() {
     };
   }, []);
 
-  const sendMessage = (content: string) => {
-    const userMessage = { 
-      role: 'user' as const, 
-      content,
+  useEffect(() => {
+    if (searchQuery && socket?.connected) {
+      searchConversations(searchQuery);
+    } else if (!searchQuery && socket?.connected) {
+      loadConversations();
+    }
+  }, [searchQuery, socket]);
+
+  const handleSendMessage = (message: string) => {
+    if (!socket?.connected || !message.trim()) return;
+
+    const userMessage: ChatMessage = {
+      role: 'user',
+      content: message,
       timestamp: new Date()
     };
+
     setMessages(prev => [...prev, userMessage]);
-    
-    if (socket) {
-      socket.emit('chat:message', {
-        messages: [...messages, userMessage],
-        conversationId: currentConversationId
-      });
-    }
-    
-    if (viewMode !== ViewMode.CHAT) {
-      setViewMode(ViewMode.CHAT);
-    }
+    setInputValue('');
+    setViewMode(ViewMode.CHAT);
+
+    socket.emit('chat:message', {
+      messages: [...messages, userMessage].map(m => ({
+        role: m.role,
+        content: m.content
+      })),
+      conversationId: currentConversationId
+    });
   };
 
   const handleNewChat = () => {
@@ -174,216 +179,171 @@ function App() {
     setCurrentConversationId(null);
     setViewMode(ViewMode.CHAT);
     setInputValue('');
-    resetBuffer();
-  };
-
-  const handleHomeClick = () => {
-    setViewMode(ViewMode.CARDS);
-    loadConversations();
   };
 
   const handleSelectConversation = (conversationId: number) => {
-    loadConversation(conversationId);
+    if (socket?.connected) {
+      loadConversation(conversationId);
+    }
   };
 
   const handleDeleteConversation = (conversationId: number) => {
-    deleteConversation(conversationId);
-    if (conversationId === currentConversationId) {
-      handleNewChat();
+    if (socket?.connected) {
+      deleteConversation(conversationId);
+      if (currentConversationId === conversationId) {
+        handleNewChat();
+      }
     }
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
-    setInputValue(suggestion);
-    if (viewMode !== ViewMode.CHAT) {
-      setViewMode(ViewMode.CHAT);
+  const handleCommand = (command: string) => {
+    switch (command) {
+      case 'new':
+        handleNewChat();
+        break;
+      case 'toggle-theme':
+        document.documentElement.classList.toggle('dark');
+        break;
+      default:
+        break;
     }
   };
 
-  const handleMessageEdit = (index: number, newContent: string) => {
-    setMessages(prev => prev.map((msg, i) => 
-      i === index ? { ...msg, content: newContent } : msg
-    ));
-  };
-
-  const commands = useMemo(() => [
-    {
-      id: 'new-chat',
-      title: 'New Chat',
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>,
-      action: handleNewChat,
-      category: 'Chat',
-      keywords: ['create', 'start', 'fresh']
-    },
-    {
-      id: 'clear-messages',
-      title: 'Clear Messages',
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>,
-      action: () => setMessages([]),
-      category: 'Chat',
-      keywords: ['delete', 'remove', 'reset']
-    },
-    {
-      id: 'view-cards',
-      title: 'View All Conversations',
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>,
-      action: () => setViewMode(ViewMode.CARDS),
-      category: 'Navigation',
-      keywords: ['home', 'browse', 'history']
-    },
-    {
-      id: 'toggle-theme',
-      title: 'Toggle Theme',
-      icon: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>,
-      action: () => document.documentElement.classList.toggle('dark'),
-      category: 'Settings',
-      keywords: ['dark', 'light', 'mode']
+  const currentView = useMemo(() => {
+    if (viewMode === ViewMode.CARDS) {
+      return (
+        <PremiumConversationCards
+          conversations={conversations}
+          onSelectConversation={handleSelectConversation}
+          onDeleteConversation={handleDeleteConversation}
+          loading={conversationsLoading}
+        />
+      );
     }
-  ], []);
+
+    return (
+      <div className="flex-1 flex flex-col h-screen pt-16">
+        {conversations.length > 0 && (
+          <TimelineView
+            conversations={conversations}
+            currentConversationId={currentConversationId}
+            onSelectConversation={handleSelectConversation}
+          />
+        )}
+        
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-4xl mx-auto">
+            {messages.length === 0 && !isStreaming && !isThinking ? (
+              <WelcomeScreen onSuggestionClick={handleSendMessage} />
+            ) : (
+              <div className="p-4 space-y-4">
+                {messages.map((message, index) => (
+                  <EditableMessage
+                    key={message.id || index}
+                    message={message}
+                    onEdit={(newContent) => {
+                      if (message.id && socket) {
+                        socket.emit('message:edit', {
+                          messageId: message.id,
+                          newContent
+                        });
+                      }
+                    }}
+                  />
+                ))}
+                
+                {isThinking && <ThinkingAnimation />}
+                
+                {isStreaming && bufferedContent && (
+                  <StreamingMessage content={bufferedContent} />
+                )}
+                
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="border-t border-gray-200/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-900/50 backdrop-blur-lg">
+          <EnhancedChatInput
+            value={inputValue}
+            onChange={setInputValue}
+            onSendMessage={handleSendMessage}
+            disabled={!connected || isStreaming}
+            placeholder={connected ? "Type your message..." : "Connecting..."}
+          />
+        </div>
+      </div>
+    );
+  }, [viewMode, conversations, messages, isStreaming, isThinking, bufferedContent, connected, inputValue, currentConversationId, conversationsLoading]);
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      {isFirstVisit && <OnboardingTips />}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950 dark:to-gray-900 relative">
+      <AnimatedBackground />
+      
+      <motion.header 
+        className="fixed top-0 left-0 right-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50"
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-8">
+              {/* Only AnimatedLogo - NO DUPLICATE TEXT */}
+              <AnimatedLogo />
+              
+              {viewMode === ViewMode.CARDS && (
+                <KeyboardHint 
+                  keys={['⌘', 'K']}
+                  onClick={toggleCommandPalette}
+                  label="Command"
+                />
+              )}
+            </div>
+            
+            <div className="flex items-center gap-3">
+              {viewMode === ViewMode.CARDS && (
+                <SearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Search conversations..."
+                />
+              )}
+              
+              <motion.button
+                onClick={handleNewChat}
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                New Chat
+              </motion.button>
+              
+              <ThemeToggle />
+              
+              {!connected && (
+                <div className="flex items-center gap-2 px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-lg text-sm">
+                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+                  Offline
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </motion.header>
+      
+      <main className="pt-16">
+        {currentView}
+      </main>
       
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={closeCommandPalette}
-        commands={commands}
+        onCommand={handleCommand}
       />
-
-      <header className="glass-gradient glass-noise border-b border-gray-200/50 dark:border-gray-700/50 backdrop-blur-xl relative">
-        <div className="max-w-full px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            {viewMode === ViewMode.CHAT && messages.length > 0 ? (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleHomeClick}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                <span>All Chats</span>
-              </motion.button>
-            ) : (
-              <AnimatedLogo size="medium" isActive={isStreaming} />
-            )}
-            <h1 className="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-              Chat Buddy AI
-            </h1>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={toggleCommandPalette}
-              className="p-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all"
-              title="Command Palette (⌘K)"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-              </svg>
-            </motion.button>
-            
-            <ThemeToggle />
-            
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleNewChat}
-              className="px-3 py-1.5 text-sm bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all"
-            >
-              New Chat
-            </motion.button>
-            
-            <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full animate-pulse ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {connected ? 'Online' : 'Offline'}
-              </span>
-            </div>
-          </div>
-        </div>
-        
-        <KeyboardHint />
-      </header>
-
-      {viewMode === ViewMode.CHAT && conversations.length > 0 && (
-        <TimelineView
-          conversations={conversations}
-          currentConversationId={currentConversationId}
-          onSelectConversation={handleSelectConversation}
-        />
-      )}
-
-      <main className="flex-1 overflow-hidden">
-        <AnimatedTransition mode={viewMode}>
-          {viewMode === ViewMode.CARDS ? (
-            <div className="h-full flex flex-col">
-              <div className="px-6 pt-6">
-                <SearchBar onSearch={searchConversations} />
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <ConversationCards
-                  conversations={conversations}
-                  onSelectConversation={handleSelectConversation}
-                  onDeleteConversation={handleDeleteConversation}
-                  loading={conversationsLoading}
-                />
-              </div>
-              <EnhancedChatInput 
-                onSendMessage={sendMessage} 
-                disabled={!connected || isStreaming} 
-                initialValue={inputValue}
-              />
-            </div>
-          ) : (
-            <div className="h-full flex flex-col">
-              <div className="flex-1 overflow-y-auto">
-                <div className="max-w-4xl mx-auto p-4">
-                  {messages.length === 0 && !isStreaming && !isThinking ? (
-                    <WelcomeScreen onSuggestionClick={handleSuggestionClick} />
-                  ) : (
-                    <>
-                      <AnimatePresence mode="popLayout">
-                        {messages.map((message, index) => (
-                          <EditableMessage
-                            key={`msg-${index}-${message.timestamp?.getTime()}`}
-                            role={message.role}
-                            content={message.content}
-                            timestamp={message.timestamp}
-                            messageId={message.id}
-                            socket={socket}
-                            onEdit={(newContent) => handleMessageEdit(index, newContent)}
-                          />
-                        ))}
-                        
-                        {isThinking && <ThinkingAnimation />}
-                        
-                        {isStreaming && bufferedContent && (
-                          <StreamingMessage
-                            content={bufferedContent}
-                            isComplete={false}
-                          />
-                        )}
-                      </AnimatePresence>
-                      <div ref={messagesEndRef} />
-                    </>
-                  )}
-                </div>
-              </div>
-              
-              <EnhancedChatInput 
-                onSendMessage={sendMessage} 
-                disabled={!connected || isStreaming} 
-                initialValue={inputValue}
-              />
-            </div>
-          )}
-        </AnimatedTransition>
-      </main>
+      
+      {isFirstVisit && <OnboardingTips />}
     </div>
   );
 }
