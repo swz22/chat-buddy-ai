@@ -3,100 +3,147 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --emerald-500: #10b981;
+    --teal-500: #14b8a6;
+    --robot-primary: #60a5fa;
+    --robot-secondary: #3730a3;
+  }
+
   html {
-    @apply h-full;
+    @apply scroll-smooth;
   }
-  
+
   body {
-    @apply h-full overflow-hidden;
+    @apply antialiased;
   }
-  
-  #root {
-    @apply h-full;
+
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-900 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-700 rounded-full hover:bg-gray-400 dark:hover:bg-gray-600;
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    @apply bg-emerald-500 dark:bg-emerald-400;
+  }
+
+  ::selection {
+    @apply bg-emerald-200 dark:bg-emerald-800 text-gray-900 dark:text-gray-100;
   }
 }
 
 @layer components {
-  .scrollbar-thin {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  .glass-gradient {
+    @apply bg-gradient-to-br from-white/10 to-white/5;
   }
-  
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+
+  .glass-noise {
+    background-image: 
+      repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(255,255,255,.02) 35px, rgba(255,255,255,.02) 70px),
+      repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(255,255,255,.02) 35px, rgba(255,255,255,.02) 70px);
   }
-  
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: transparent;
+
+  .glass-input {
+    @apply bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-gray-200/50 dark:border-gray-700/50;
   }
-  
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: rgba(156, 163, 175, 0.5);
-    border-radius: 3px;
+
+  .gradient-emerald {
+    @apply bg-gradient-to-r from-emerald-500 to-teal-600;
   }
-  
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(156, 163, 175, 0.7);
+
+  .gradient-warm {
+    @apply bg-gradient-to-r from-orange-500 to-amber-600;
   }
-  
-  .dark .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: rgba(75, 85, 99, 0.5);
+
+  .gradient-robot {
+    background: radial-gradient(circle, var(--robot-primary) 0%, var(--robot-secondary) 100%);
   }
-  
-  .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: rgba(75, 85, 99, 0.7);
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient 8s ease infinite;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r;
+  }
+
+  .button-primary {
+    @apply px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 font-medium;
+  }
+
+  .button-secondary {
+    @apply px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors font-medium;
+  }
+
+  .card-hover {
+    @apply hover:shadow-xl hover:-translate-y-1 transition-all duration-300;
+  }
+
+  .focus-emerald {
+    @apply focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:border-transparent;
   }
 }
 
 @layer utilities {
-  .animate-smooth {
-    animation-duration: 0.3s;
-    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  .animation-delay-200 {
+    animation-delay: 200ms;
   }
-  
-  .transition-height {
-    transition-property: height, max-height;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 300ms;
+
+  .animation-delay-400 {
+    animation-delay: 400ms;
   }
-  
-  .preserve-3d {
+
+  .animation-delay-600 {
+    animation-delay: 600ms;
+  }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .transform-style-3d {
     transform-style: preserve-3d;
   }
-  
+
   .backface-hidden {
     backface-visibility: hidden;
   }
-  
-  .chat-container {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+
+  .rotate-y-180 {
+    transform: rotateY(180deg);
   }
-  
-  .messages-container {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scroll-behavior: smooth;
-    min-height: 0;
-  }
-  
-  .messages-wrapper {
-    min-height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    padding: 1rem;
-  }
-  
-  .conversation-transition {
-    transition: opacity 150ms ease-in-out;
-  }
-  
-  .conversation-transition.loading {
-    opacity: 0.5;
+
+  @keyframes gradient {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
   }
 }
