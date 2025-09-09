@@ -42,7 +42,7 @@ export default function LogoWrapper({
       {showText && (
         <div className="flex flex-col">
           <motion.h1 
-            className={`${textSizes[size]} font-bold bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600 bg-clip-text text-transparent`}
+            className={`${textSizes[size]} font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent`}
             whileHover={{ scale: 1.02 }}
           >
             Chat Buddy AI

@@ -294,7 +294,7 @@ function App() {
               
               <motion.button
                 onClick={handleNewChat}
-                className="px-4 py-2 bg-gradient-to-r from-blue-400 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-200"
+                className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all duration-200"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
