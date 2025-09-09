@@ -1,0 +1,165 @@
+import { motion } from 'framer-motion';
+
+interface GlowBotLogoProps {
+  size?: 'small' | 'medium' | 'large';
+  animated?: boolean;
+  className?: string;
+}
+
+export default function GlowBotLogo({ 
+  size = 'medium', 
+  animated = true,
+  className = '' 
+}: GlowBotLogoProps) {
+  const dimensions = {
+    small: { width: 40, height: 40, viewBox: '0 0 180 180' },
+    medium: { width: 60, height: 60, viewBox: '0 0 180 180' },
+    large: { width: 180, height: 180, viewBox: '0 0 180 180' }
+  };
+
+  const { width, height, viewBox } = dimensions[size];
+
+  return (
+    <svg 
+      width={width} 
+      height={height} 
+      viewBox={viewBox}
+      className={className}
+    >
+      <defs>
+        <radialGradient id="glow1">
+          <stop offset="0%" style={{ stopColor: '#60a5fa', stopOpacity: 1 }} />
+          <stop offset="100%" style={{ stopColor: '#3730a3', stopOpacity: 1 }} />
+        </radialGradient>
+        <filter id="blur">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="3"/>
+        </filter>
+        <filter id="lightBlur">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+        </filter>
+      </defs>
+      
+      {animated ? (
+        <motion.ellipse 
+          cx="90" 
+          cy="90" 
+          rx="70" 
+          ry="65" 
+          fill="url(#glow1)" 
+          filter="url(#blur)"
+          initial={{ opacity: 0.2 }}
+          animate={{ opacity: [0.2, 0.4, 0.2] }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        />
+      ) : (
+        <ellipse 
+          cx="90" 
+          cy="90" 
+          rx="70" 
+          ry="65" 
+          fill="url(#glow1)" 
+          opacity="0.2" 
+          filter="url(#blur)"
+        />
+      )}
+      
+      <ellipse cx="90" cy="90" rx="60" ry="55" fill="url(#glow1)"/>
+      
+      <ellipse cx="90" cy="85" rx="50" ry="40" fill="white" opacity="0.3"/>
+      <ellipse cx="90" cy="80" rx="45" ry="35" fill="none" stroke="white" strokeWidth="2" opacity="0.5"/>
+      
+      {animated ? (
+        <>
+          <motion.g
+            initial={{ scale: 1 }}
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.5
+            }}
+          >
+            <circle cx="70" cy="80" r="12" fill="#ffffff"/>
+            <circle cx="70" cy="80" r="8" fill="#0ea5e9"/>
+            <circle cx="72" cy="78" r="3" fill="white"/>
+          </motion.g>
+          <motion.g
+            initial={{ scale: 1 }}
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.5
+            }}
+          >
+            <circle cx="110" cy="80" r="12" fill="#ffffff"/>
+            <circle cx="110" cy="80" r="8" fill="#0ea5e9"/>
+            <circle cx="112" cy="78" r="3" fill="white"/>
+          </motion.g>
+        </>
+      ) : (
+        <>
+          <circle cx="70" cy="80" r="12" fill="#ffffff"/>
+          <circle cx="110" cy="80" r="12" fill="#ffffff"/>
+          <circle cx="70" cy="80" r="8" fill="#0ea5e9"/>
+          <circle cx="110" cy="80" r="8" fill="#0ea5e9"/>
+          <circle cx="72" cy="78" r="3" fill="white"/>
+          <circle cx="112" cy="78" r="3" fill="white"/>
+        </>
+      )}
+      
+      <rect x="70" y="100" width="40" height="8" rx="4" fill="#1e293b" opacity="0.5"/>
+      <rect x="70" y="100" width="25" height="8" rx="4" fill="#10b981"/>
+      
+      {animated ? (
+        <>
+          <motion.circle 
+            cx="35" 
+            cy="90" 
+            r="4"
+            fill="#60a5fa"
+            filter="url(#lightBlur)"
+            initial={{ opacity: 0.8 }}
+            animate={{ 
+              r: [4, 6, 4],
+              opacity: [0.8, 0.4, 0.8]
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+          <motion.circle 
+            cx="145" 
+            cy="90" 
+            r="4"
+            fill="#60a5fa"
+            filter="url(#lightBlur)"
+            initial={{ opacity: 0.8 }}
+            animate={{ 
+              r: [4, 6, 4],
+              opacity: [0.8, 0.4, 0.8]
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+        </>
+      ) : (
+        <>
+          <circle cx="35" cy="90" r="4" fill="#60a5fa" opacity="0.8"/>
+          <circle cx="145" cy="90" r="4" fill="#60a5fa" opacity="0.8"/>
+        </>
+      )}
+    </svg>
+  );
+}
