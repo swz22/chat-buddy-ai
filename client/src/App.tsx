@@ -83,23 +83,40 @@ function App() {
   }, [toggleCommandPalette]);
 
   useEffect(() => {
-    const socketInstance = io(API_URL, {
-      transports: ['websocket', 'polling'],
+    const socketInstance = io(API_URL || 'http://localhost:5000', {
+      transports: ['polling'],
+      upgrade: false,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+    });
+
+    socketInstance.io.on('error', (error) => {
+      if (!error.message.includes('WebSocket')) {
+        console.error('Socket.io error:', error);
+      }
     });
 
     socketInstance.on('connect', () => {
-      console.log('Connected to server');
+      console.log('Connected to server via polling');
       setConnected(true);
       if (currentConversationId) {
         socketInstance.emit('conversation:load', { conversationId: currentConversationId });
       }
+      socketInstance.emit('conversations:list');
     });
 
     socketInstance.on('disconnect', () => {
       console.log('Disconnected from server');
+      setConnected(false);
+    });
+
+    socketInstance.on('connect_error', (error) => {
+      if (!error.message.includes('WebSocket')) {
+        console.error('Connection error:', error.message);
+      }
       setConnected(false);
     });
 
@@ -132,13 +149,17 @@ function App() {
       
       if (!currentConversationId && data.conversationId) {
         setCurrentConversationId(data.conversationId);
-        loadConversations();
+        if (socketInstance && socketInstance.connected) {
+          socketInstance.emit('conversations:list');
+        }
       }
     });
 
     socketInstance.on('conversation:created', (data) => {
       setCurrentConversationId(data.conversationId);
-      loadConversations();
+      if (socketInstance && socketInstance.connected) {
+        socketInstance.emit('conversations:list');
+      }
     });
 
     socketInstance.on('conversation:loaded', (data) => {
@@ -171,6 +192,12 @@ function App() {
       socketInstance.disconnect();
     };
   }, []);
+
+  useEffect(() => {
+    if (socket && connected) {
+      loadConversations();
+    }
+  }, [socket, connected, loadConversations]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
