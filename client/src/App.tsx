@@ -211,12 +211,23 @@ function App() {
   const currentView = useMemo(() => {
     if (viewMode === ViewMode.CARDS) {
       return (
-        <PremiumConversationCards
-          conversations={conversations}
-          onSelectConversation={handleSelectConversation}
-          onDeleteConversation={handleDeleteConversation}
-          loading={conversationsLoading}
-        />
+        <div className="flex-1 flex flex-col h-screen pt-16">
+          <div className="flex-1 overflow-y-auto">
+            <PremiumConversationCards
+              conversations={conversations}
+              onSelectConversation={handleSelectConversation}
+              onDeleteConversation={handleDeleteConversation}
+              loading={conversationsLoading}
+            />
+          </div>
+          <EnhancedChatInput
+            value={inputValue}
+            onChange={setInputValue}
+            onSendMessage={handleSendMessage}
+            disabled={!connected || isStreaming}
+            placeholder={connected ? "Start a new conversation..." : "Connecting..."}
+          />
+        </div>
       );
     }
 
