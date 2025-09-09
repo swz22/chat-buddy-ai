@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import GlowBotLogo from './GlowBotLogo';
+import Logo from './Logo';
 
 interface LogoWrapperProps {
   showText?: boolean;
@@ -36,7 +36,7 @@ export default function LogoWrapper({
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
-        <GlowBotLogo size={size} animated={true} />
+        <Logo size={size} />
       </motion.div>
       
       {showText && (
