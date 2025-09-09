@@ -128,7 +128,8 @@
     padding: 1px;
     background: linear-gradient(135deg, theme('colors.blue.500'), theme('colors.purple.500'));
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: destination-out;
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     mask-composite: exclude;
   }
 }
