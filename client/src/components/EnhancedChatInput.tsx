@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface EnhancedChatInputProps {
@@ -12,159 +12,143 @@ interface EnhancedChatInputProps {
 export default function EnhancedChatInput({
   onSendMessage,
   disabled = false,
-  placeholder = "Type your message...",
-  value: controlledValue,
-  onChange
+  placeholder = "Message Chat Buddy AI...",
+  value: externalValue,
+  onChange: externalOnChange
 }: EnhancedChatInputProps) {
-  const [localValue, setLocalValue] = useState('');
+  const [internalValue, setInternalValue] = useState('');
+  const [isComposing, setIsComposing] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const typingTimeoutRef = useRef<number | null>(null);
-
-  const value = controlledValue !== undefined ? controlledValue : localValue;
+  
+  const value = externalValue !== undefined ? externalValue : internalValue;
+  const setValue = (newValue: string) => {
+    if (externalOnChange) {
+      externalOnChange(newValue);
+    } else {
+      setInternalValue(newValue);
+    }
+  };
 
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
-    }
+    adjustTextareaHeight();
   }, [value]);
 
-  useEffect(() => {
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newValue = e.target.value;
-    if (onChange) {
-      onChange(newValue);
-    } else {
-      setLocalValue(newValue);
-    }
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
     
-    setIsTyping(true);
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    typingTimeoutRef.current = window.setTimeout(() => {
-      setIsTyping(false);
-    }, 1000);
+    textarea.style.height = 'auto';
+    const newHeight = Math.min(textarea.scrollHeight, 200);
+    textarea.style.height = `${newHeight}px`;
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleSubmit = () => {
+    if (!value.trim() || disabled || isComposing) return;
+    
+    onSendMessage(value.trim());
+    setValue('');
+    
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
       e.preventDefault();
-      handleSend();
+      handleSubmit();
     }
   };
 
-  const handleSend = () => {
-    if (value.trim() && !disabled) {
-      onSendMessage(value.trim());
-      if (!controlledValue) {
-        setLocalValue('');
-      }
-      setIsTyping(false);
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    }
-  };
+  const suggestions = [
+    { icon: '💡', text: 'Explain a concept' },
+    { icon: '💻', text: 'Write code' },
+    { icon: '📝', text: 'Help with writing' },
+    { icon: '🔍', text: 'Research a topic' }
+  ];
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto p-4">
-      <motion.div
-        className={`relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl transition-all duration-300 ${
-          isFocused 
-            ? 'shadow-2xl shadow-emerald-500/10 dark:shadow-emerald-400/10' 
-            : 'shadow-lg shadow-gray-200/50 dark:shadow-gray-900/50'
-        }`}
-        animate={{
-          scale: isFocused ? 1.01 : 1,
-        }}
-        transition={{ duration: 0.2 }}
-      >
-        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 opacity-0 transition-opacity duration-300 ${
-          isFocused ? 'opacity-100' : 'opacity-0'
-        }`} style={{ padding: '1px' }}>
-          <div className="h-full w-full rounded-2xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl" />
-        </div>
-        
-        <div className="relative flex items-end gap-2 p-4">
-          <AnimatePresence>
-            {isTyping && (
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                className="absolute -top-8 left-4 px-3 py-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs rounded-full"
-              >
-                <span className="flex items-center gap-1">
-                  <motion.span
-                    animate={{ opacity: [0.4, 1, 0.4] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    ●
-                  </motion.span>
-                  <motion.span
-                    animate={{ opacity: [0.4, 1, 0.4] }}
-                    transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
-                  >
-                    ●
-                  </motion.span>
-                  <motion.span
-                    animate={{ opacity: [0.4, 1, 0.4] }}
-                    transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
-                  >
-                    ●
-                  </motion.span>
-                </span>
-              </motion.div>
+    <div className="w-full bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800">
+      <div className="max-w-4xl mx-auto p-4">
+        <AnimatePresence>
+          {value.length === 0 && !isFocused && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex gap-2 mb-3 flex-wrap"
+            >
+              {suggestions.map((suggestion, index) => (
+                <motion.button
+                  key={index}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setValue(suggestion.text)}
+                  className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+                >
+                  <span>{suggestion.icon}</span>
+                  <span>{suggestion.text}</span>
+                </motion.button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className={`relative flex items-end gap-3 bg-gray-50 dark:bg-gray-800 rounded-2xl px-4 py-3 transition-all ${
+          isFocused ? 'ring-2 ring-blue-500 dark:ring-blue-400' : ''
+        }`}>
+          <div className="flex-1 flex items-center">
+            <textarea
+              ref={textareaRef}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              onCompositionStart={() => setIsComposing(true)}
+              onCompositionEnd={() => setIsComposing(false)}
+              placeholder={placeholder}
+              disabled={disabled}
+              rows={1}
+              className="w-full resize-none bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ minHeight: '24px', maxHeight: '200px' }}
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            {value.length > 0 && (
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                {value.length}
+              </span>
             )}
-          </AnimatePresence>
-          
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            placeholder={placeholder}
-            disabled={disabled}
-            rows={1}
-            className="flex-1 resize-none bg-transparent text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-base leading-relaxed"
-            style={{ minHeight: '24px', maxHeight: '200px' }}
-          />
-          
-          <motion.button
-            onClick={handleSend}
-            disabled={disabled || !value.trim()}
-            className={`p-3 rounded-xl transition-all duration-200 ${
-              value.trim() && !disabled
-                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg hover:shadow-xl hover:scale-105'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-            }`}
-            whileHover={value.trim() && !disabled ? { scale: 1.05 } : {}}
-            whileTap={value.trim() && !disabled ? { scale: 0.95 } : {}}
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-          </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: disabled || !value.trim() ? 1 : 1.1 }}
+              whileTap={{ scale: disabled || !value.trim() ? 1 : 0.9 }}
+              onClick={handleSubmit}
+              disabled={disabled || !value.trim()}
+              className={`p-2 rounded-lg transition-all ${
+                value.trim() && !disabled
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </motion.button>
+          </div>
         </div>
-      </motion.div>
-      
-      <div className="flex items-center justify-between mt-2 px-2">
-        <p className="text-xs text-gray-400 dark:text-gray-500">
-          Press <kbd className="px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">Shift+Enter</kbd> for new line
-        </p>
+
+        <div className="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+          <span>Press Enter to send, Shift+Enter for new line</span>
+          {disabled && (
+            <span className="text-yellow-600 dark:text-yellow-400">
+              Connecting...
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
