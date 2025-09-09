@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import AnimatedLogo from './AnimatedLogo';
+import Logo from './Logo';
 import ThemeToggle from './ThemeToggle';
 import KeyboardHint from './KeyboardHint';
 
@@ -18,7 +18,17 @@ export default function Header({ onNewChat, onToggleCommandPalette }: HeaderProp
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <AnimatedLogo />
+          <div className="flex items-center gap-3">
+            <Logo size="small" />
+            <div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent">
+                Chat Buddy AI
+              </h1>
+              <p className="text-xs text-gray-600 dark:text-gray-400 -mt-1">
+                Powered by OpenAI
+              </p>
+            </div>
+          </div>
           
           <div className="flex items-center gap-3">
             <KeyboardHint 
