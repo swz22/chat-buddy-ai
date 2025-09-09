@@ -20,7 +20,7 @@ export default function EnhancedChatInput({
   const [isFocused, setIsFocused] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<number | null>(null);
 
   const value = controlledValue !== undefined ? controlledValue : localValue;
 
@@ -30,6 +30,14 @@ export default function EnhancedChatInput({
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
   }, [value]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
@@ -60,6 +68,10 @@ export default function EnhancedChatInput({
       onSendMessage(value.trim());
       if (!controlledValue) {
         setLocalValue('');
+      }
+      setIsTyping(false);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
       }
     }
   };
