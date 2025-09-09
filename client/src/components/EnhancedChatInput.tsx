@@ -81,7 +81,7 @@ export default function EnhancedChatInput({
       <motion.div
         className={`relative bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl transition-all duration-300 ${
           isFocused 
-            ? 'shadow-2xl shadow-blue-500/10 dark:shadow-blue-400/10' 
+            ? 'shadow-2xl shadow-emerald-500/10 dark:shadow-emerald-400/10' 
             : 'shadow-lg shadow-gray-200/50 dark:shadow-gray-900/50'
         }`}
         animate={{
@@ -89,7 +89,7 @@ export default function EnhancedChatInput({
         }}
         transition={{ duration: 0.2 }}
       >
-        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500 to-purple-500 opacity-0 transition-opacity duration-300 ${
+        <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 opacity-0 transition-opacity duration-300 ${
           isFocused ? 'opacity-100' : 'opacity-0'
         }`} style={{ padding: '1px' }}>
           <div className="h-full w-full rounded-2xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl" />
@@ -102,7 +102,7 @@ export default function EnhancedChatInput({
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0, opacity: 0 }}
-                className="absolute -top-8 left-4 px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs rounded-full"
+                className="absolute -top-8 left-4 px-3 py-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs rounded-full"
               >
                 <span className="flex items-center gap-1">
                   <motion.span
@@ -147,7 +147,7 @@ export default function EnhancedChatInput({
             disabled={disabled || !value.trim()}
             className={`p-3 rounded-xl transition-all duration-200 ${
               value.trim() && !disabled
-                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl hover:scale-105'
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg hover:shadow-xl hover:scale-105'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
             }`}
             whileHover={value.trim() && !disabled ? { scale: 1.05 } : {}}
