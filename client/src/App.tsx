@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import AnimatedBackground from './components/AnimatedBackground';
 import LogoWrapper from './components/LogoWrapper';
 import ThemeToggle from './components/ThemeToggle';
@@ -18,7 +18,7 @@ import { useConversations } from './hooks/useConversations';
 import { useTokenBuffer } from './hooks/useTokenBuffer';
 import { useCommandPalette } from './hooks/useCommandPalette';
 import { ViewMode } from './types/appState';
-import { Conversation, Message as ConversationMessage } from './types/conversation';
+import { Message as ConversationMessage } from './types/conversation';
 import { API_URL } from './config/api';
 
 interface ChatMessage {
@@ -64,175 +64,212 @@ function App() {
     loadConversations
   } = useConversations(socket);
   
-  const {
-    isOpen: isCommandPaletteOpen,
-    close: closeCommandPalette,
-    toggle: toggleCommandPalette
+  const { 
+    isOpen: isCommandPaletteOpen, 
+    close: closeCommandPalette, 
+    toggle: toggleCommandPalette 
   } = useCommandPalette();
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, bufferedContent, isThinking]);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        toggleCommandPalette();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleCommandPalette]);
 
   useEffect(() => {
-    const newSocket = io(API_URL || 'http://localhost:5000');
-
-    newSocket.on('connect', () => {
-      console.log('Connected to server');
-      setConnected(true);
+    const socketInstance = io(API_URL, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
-    newSocket.on('disconnect', () => {
+    socketInstance.on('connect', () => {
+      console.log('Connected to server');
+      setConnected(true);
+      if (currentConversationId) {
+        socketInstance.emit('conversation:load', { conversationId: currentConversationId });
+      }
+    });
+
+    socketInstance.on('disconnect', () => {
       console.log('Disconnected from server');
       setConnected(false);
     });
 
-    newSocket.on('chat:start', () => {
+    socketInstance.on('chat:start', () => {
       setIsThinking(true);
       setIsStreaming(false);
       resetBuffer();
     });
 
-    newSocket.on('chat:token', (data: { token: string }) => {
+    socketInstance.on('chat:token', (data) => {
       setIsThinking(false);
       setIsStreaming(true);
       addToken(data.token);
     });
 
-    newSocket.on('chat:complete', (data: { message: string; messageId: number; conversationId: number }) => {
-      forceFlush();
-      setMessages(prev => [...prev, { 
-        id: data.messageId,
-        role: 'assistant', 
-        content: data.message,
-        timestamp: new Date()
-      }]);
+    socketInstance.on('chat:complete', (data) => {
       setIsStreaming(false);
       setIsThinking(false);
+      
+      const completeMessage: ChatMessage = {
+        id: data.messageId,
+        role: 'assistant',
+        content: data.message,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, completeMessage]);
+      forceFlush();
       resetBuffer();
       
-      if (data.conversationId) {
+      if (!currentConversationId && data.conversationId) {
         setCurrentConversationId(data.conversationId);
-      }
-      
-      if (newSocket.connected) {
         loadConversations();
       }
     });
 
-    newSocket.on('conversation:created', (data: { conversationId: number; title: string }) => {
+    socketInstance.on('conversation:created', (data) => {
       setCurrentConversationId(data.conversationId);
+      loadConversations();
     });
 
-    newSocket.on('conversation:loaded', (data: { conversation: Conversation; messages: ConversationMessage[] }) => {
-      const chatMessages: ChatMessage[] = data.messages.map(msg => ({
+    socketInstance.on('conversation:loaded', (data) => {
+      const loadedMessages: ChatMessage[] = data.messages.map((msg: ConversationMessage) => ({
         id: msg.id,
         role: msg.role as 'user' | 'assistant',
         content: msg.content,
-        timestamp: msg.created_at ? new Date(msg.created_at) : new Date()
+        timestamp: msg.created_at ? new Date(msg.created_at) : undefined
       }));
-      setMessages(chatMessages);
-      setCurrentConversationId(data.conversation.id!);
-      setViewMode(ViewMode.CHAT);
+      setMessages(loadedMessages);
     });
 
-    setSocket(newSocket);
+    socketInstance.on('message:edited', (data) => {
+      setMessages(prev => prev.map(msg => 
+        msg.id === data.messageId 
+          ? { ...msg, content: data.newContent }
+          : msg
+      ));
+    });
+
+    socketInstance.on('chat:error', (error) => {
+      console.error('Chat error:', error);
+      setIsStreaming(false);
+      setIsThinking(false);
+    });
+
+    setSocket(socketInstance);
 
     return () => {
-      newSocket.disconnect();
+      socketInstance.disconnect();
     };
   }, []);
 
   useEffect(() => {
-    if (searchQuery && socket?.connected) {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, bufferedContent]);
+
+  useEffect(() => {
+    if (searchQuery && socket) {
       searchConversations(searchQuery);
-    } else if (!searchQuery && socket?.connected) {
+    } else if (!searchQuery && socket) {
       loadConversations();
     }
-  }, [searchQuery, socket]);
+  }, [searchQuery, socket, searchConversations, loadConversations]);
 
-  const handleSendMessage = (message: string) => {
-    if (!socket?.connected || !message.trim()) return;
+  const handleSendMessage = (content: string) => {
+    if (!socket || !content.trim()) return;
 
     const userMessage: ChatMessage = {
       role: 'user',
-      content: message,
+      content,
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInputValue('');
-    setViewMode(ViewMode.CHAT);
+
+    const allMessages = [...messages, userMessage].map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
 
     socket.emit('chat:message', {
-      messages: [...messages, userMessage].map(m => ({
-        role: m.role,
-        content: m.content
-      })),
-      conversationId: currentConversationId
+      messages: allMessages,
+      conversationId: currentConversationId || undefined
     });
   };
 
+  const handleSelectConversation = (conversationId: number) => {
+    setCurrentConversationId(conversationId);
+    setViewMode(ViewMode.CHAT);
+    loadConversation(conversationId);
+  };
+
+  const handleDeleteConversation = async (conversationId: number) => {
+    deleteConversation(conversationId);
+    if (conversationId === currentConversationId) {
+      setCurrentConversationId(null);
+      setMessages([]);
+      setViewMode(ViewMode.CARDS);
+    }
+  };
+
   const handleNewChat = () => {
-    setMessages([]);
     setCurrentConversationId(null);
+    setMessages([]);
     setViewMode(ViewMode.CHAT);
     setInputValue('');
-  };
-
-  const handleSelectConversation = (conversationId: number) => {
-    if (socket?.connected) {
-      loadConversation(conversationId);
-    }
-  };
-
-  const handleDeleteConversation = (conversationId: number) => {
-    if (socket?.connected) {
-      deleteConversation(conversationId);
-      if (currentConversationId === conversationId) {
-        handleNewChat();
-      }
-    }
+    resetBuffer();
   };
 
   const handleCommand = (command: string) => {
     switch (command) {
-      case 'new':
+      case 'new-chat':
         handleNewChat();
         break;
-      case 'toggle-theme':
-        document.documentElement.classList.toggle('dark');
+      case 'toggle-view':
+        setViewMode(viewMode === ViewMode.CARDS ? ViewMode.CHAT : ViewMode.CARDS);
         break;
-      default:
+      case 'clear-history':
+        if (confirm('Are you sure you want to clear all conversations?')) {
+          conversations.forEach(conv => handleDeleteConversation(conv.id));
+        }
         break;
+    }
+    closeCommandPalette();
+  };
+
+  const handleEditMessage = (messageId: number, newContent: string) => {
+    if (socket) {
+      socket.emit('message:edit', {
+        messageId,
+        newContent
+      });
     }
   };
 
   const currentView = useMemo(() => {
     if (viewMode === ViewMode.CARDS) {
       return (
-        <div className="flex-1 flex flex-col h-screen pt-16">
-          <div className="flex-1 overflow-y-auto">
-            <PremiumConversationCards
-              conversations={conversations}
-              onSelectConversation={handleSelectConversation}
-              onDeleteConversation={handleDeleteConversation}
-              loading={conversationsLoading}
-            />
-          </div>
-          <EnhancedChatInput
-            value={inputValue}
-            onChange={setInputValue}
-            onSendMessage={handleSendMessage}
-            disabled={!connected || isStreaming}
-            placeholder={connected ? "Start a new conversation..." : "Connecting..."}
-          />
-        </div>
+        <PremiumConversationCards
+          conversations={conversations}
+          onSelectConversation={handleSelectConversation}
+          onDeleteConversation={handleDeleteConversation}
+          loading={conversationsLoading}
+        />
       );
     }
 
     return (
-      <div className="flex-1 flex flex-col h-screen pt-16">
+      <div className="flex flex-col h-full">
         {conversations.length > 0 && (
           <TimelineView
             conversations={conversations}
@@ -242,38 +279,92 @@ function App() {
         )}
         
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto">
-            {messages.length === 0 && !isStreaming && !isThinking ? (
-              <WelcomeScreen onSuggestionClick={handleSendMessage} />
-            ) : (
-              <div className="px-4 py-8 space-y-6">
+          {messages.length === 0 && !isStreaming ? (
+            <WelcomeScreen onSuggestionClick={handleSendMessage} />
+          ) : (
+            <div className="max-w-4xl mx-auto px-4 py-8">
+              <AnimatePresence mode="popLayout">
                 {messages.map((message, index) => (
-                  <EditableMessage
+                  <motion.div
                     key={message.id || index}
-                    message={message}
-                    onEdit={(newContent) => {
-                      if (message.id && socket) {
-                        socket.emit('message:edit', { 
-                          messageId: message.id, 
-                          newContent 
-                        });
-                      }
-                    }}
-                  />
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="mb-6"
+                  >
+                    {message.role === 'user' ? (
+                      <div className="flex justify-end">
+                        <div className="flex items-start gap-3 max-w-3xl">
+                          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-2xl rounded-tr-sm shadow-sm">
+                            <p className="text-sm">{message.content}</p>
+                          </div>
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-white font-bold text-xs">U</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex justify-start">
+                        <div className="flex items-start gap-3 max-w-3xl">
+                          <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-white font-bold text-xs">AI</span>
+                          </div>
+                          <div className="bg-white dark:bg-gray-800 px-4 py-2 rounded-2xl rounded-tl-sm shadow-sm border border-gray-200 dark:border-gray-700">
+                            {message.id ? (
+                              <EditableMessage
+                                content={message.content}
+                                onEdit={(newContent) => handleEditMessage(message.id!, newContent)}
+                              />
+                            ) : (
+                              <div className="message-content">
+                                <p className="text-sm">{message.content}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
                 ))}
-                
-                {isThinking && <ThinkingAnimation />}
-                
-                {isStreaming && bufferedContent && (
-                  <StreamingMessage content={bufferedContent} />
-                )}
-                
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-          </div>
+              </AnimatePresence>
+
+              {isThinking && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-start mb-6"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold text-xs">AI</span>
+                    </div>
+                    <ThinkingAnimation />
+                  </div>
+                </motion.div>
+              )}
+
+              {isStreaming && bufferedContent && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex justify-start mb-6"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold text-xs">AI</span>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 px-4 py-2 rounded-2xl rounded-tl-sm shadow-sm border border-gray-200 dark:border-gray-700">
+                      <StreamingMessage content={bufferedContent} />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+          )}
         </div>
-        
+
         <EnhancedChatInput
           value={inputValue}
           onChange={setInputValue}
