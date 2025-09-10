@@ -5,12 +5,14 @@ interface LogoWrapperProps {
   showText?: boolean;
   size?: 'small' | 'medium' | 'large';
   className?: string;
+  onClick?: () => void;
 }
 
 export default function LogoWrapper({ 
   showText = true, 
   size = 'medium',
-  className = ''
+  className = '',
+  onClick
 }: LogoWrapperProps) {
   const textSizes = {
     small: 'text-lg',
@@ -36,7 +38,7 @@ export default function LogoWrapper({
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
-        <Logo size={size} />
+        <Logo size={size} onClick={onClick} />
       </motion.div>
       
       {showText && (
