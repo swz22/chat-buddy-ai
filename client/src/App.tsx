@@ -330,10 +330,10 @@ function App() {
                     {message.role === 'user' ? (
                       <div className="flex justify-end">
                         <div className="flex items-start gap-3 max-w-3xl">
-                          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-2xl rounded-tr-sm shadow-sm">
+                          <div className="bg-gradient-to-r from-slate-600 to-zinc-700 text-white px-4 py-2 rounded-2xl rounded-tr-sm shadow-sm">
                             <p className="text-sm">{message.content}</p>
                           </div>
-                          <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                          <div className="w-8 h-8 bg-gradient-to-br from-slate-600 to-zinc-700 rounded-full flex items-center justify-center flex-shrink-0">
                             <span className="text-white font-bold text-xs">U</span>
                           </div>
                         </div>
