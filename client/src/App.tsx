@@ -313,7 +313,7 @@ function App() {
           />
         )}
         
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
           {messages.length === 0 && !isStreaming ? (
             <WelcomeScreen onSuggestionClick={handleSendMessage} />
           ) : (
