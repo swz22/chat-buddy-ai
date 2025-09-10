@@ -211,6 +211,14 @@ function App() {
     }
   }, [searchQuery, socket, searchConversations, loadConversations]);
 
+  const handleGoHome = () => {
+    setViewMode(ViewMode.CARDS);
+    setCurrentConversationId(null);
+    setMessages([]);
+    setInputValue('');
+    resetBuffer();
+  };
+
   const handleSendMessage = (content: string) => {
     if (!socket || !content.trim()) return;
 
@@ -410,7 +418,7 @@ function App() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <LogoWrapper size="small" showText={true} />
+            <LogoWrapper size="small" showText={true} onClick={handleGoHome} />
             
             <div className="flex items-center gap-4">
               {viewMode === ViewMode.CARDS && (
