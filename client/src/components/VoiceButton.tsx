@@ -1,5 +1,5 @@
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useVoiceRecognition } from '../hooks/useVoiceRecognition';
 
 interface VoiceButtonProps {
   onTranscript: (text: string) => void;
@@ -8,38 +8,101 @@ interface VoiceButtonProps {
 }
 
 export default function VoiceButton({ onTranscript, disabled = false, className = '' }: VoiceButtonProps) {
-  const {
-    isListening,
-    isSupported,
-    transcript,
-    interimTranscript,
-    error,
-    startListening,
-    stopListening,
-    resetTranscript
-  } = useVoiceRecognition({
-    continuous: false,
-    interimResults: true,
-    onResult: (text, isFinal) => {
-      if (isFinal) {
-        onTranscript(text);
-        resetTranscript();
-      }
-    }
-  });
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
-  const handleClick = () => {
-    if (!isSupported) {
-      alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
-      return;
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+      
+      recognition.onstart = () => {
+        console.log('Voice recognition started');
+        setIsListening(true);
+        setError(null);
+        setTranscript('');
+      };
+      
+      recognition.onresult = (event: any) => {
+        console.log('Voice recognition result:', event);
+        const current = event.resultIndex;
+        const transcriptText = event.results[current][0].transcript;
+        console.log('Transcript:', transcriptText);
+        setTranscript(transcriptText);
+        onTranscript(transcriptText);
+        setIsListening(false);
+      };
+      
+      recognition.onerror = (event: any) => {
+        console.error('Voice recognition error:', event.error);
+        
+        if (event.error === 'network') {
+          setError('Network Error - Cannot connect to speech service');
+        } else if (event.error === 'not-allowed') {
+          setError('Microphone access denied - Please allow microphone access');
+        } else if (event.error === 'no-speech') {
+          setError('No speech detected - Please try again');
+        } else if (event.error === 'audio-capture') {
+          setError('No microphone found - Please check your microphone');
+        } else if (event.error === 'language-not-supported') {
+          setError('Language not supported');
+        } else {
+          setError(`Error: ${event.error}`);
+        }
+        setIsListening(false);
+      };
+      
+      recognition.onend = () => {
+        console.log('Voice recognition ended');
+        setIsListening(false);
+      };
+      
+      recognitionRef.current = recognition;
     }
     
+    return () => {
+      if (recognitionRef.current && isListening) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) {
+      alert('Voice recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
+      return;
+    }
+
     if (isListening) {
-      stopListening();
+      console.log('Stopping voice recognition');
+      recognitionRef.current.stop();
+      setIsListening(false);
     } else {
-      startListening();
+      console.log('Starting voice recognition');
+      setError(null);
+      try {
+        recognitionRef.current.start();
+      } catch (error: any) {
+        console.error('Failed to start recognition:', error);
+        if (error.message && error.message.includes('already started')) {
+          recognitionRef.current.stop();
+          setTimeout(() => {
+            recognitionRef.current?.start();
+          }, 100);
+        } else {
+          setError('Failed to start voice recognition');
+        }
+      }
     }
   };
+
+  const isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
 
   if (!isSupported) {
     return null;
@@ -48,7 +111,8 @@ export default function VoiceButton({ onTranscript, disabled = false, className 
   return (
     <div className="relative">
       <motion.button
-        onClick={handleClick}
+        type="button"
+        onClick={toggleListening}
         disabled={disabled}
         className={`relative p-3 rounded-full transition-all ${className} ${
           isListening 
@@ -76,55 +140,62 @@ export default function VoiceButton({ onTranscript, disabled = false, className 
           )}
         </motion.div>
 
-        <AnimatePresence>
-          {isListening && (
-            <motion.div
-              className="absolute inset-0 rounded-full"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1.5, opacity: 0 }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-            >
-              <div className="w-full h-full bg-red-500 rounded-full" />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {isListening && (
+          <motion.div
+            className="absolute inset-0 rounded-full bg-red-500"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1.5, opacity: 0 }}
+            transition={{ repeat: Infinity, duration: 1.5 }}
+          />
+        )}
       </motion.button>
 
       <AnimatePresence>
-        {(transcript || interimTranscript) && (
+        {transcript && !error && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 
+            className="absolute bottom-full mb-2 right-0 
                      bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 min-w-[200px] max-w-[300px]
-                     border border-gray-200 dark:border-gray-700"
+                     border border-gray-200 dark:border-gray-700 z-50"
           >
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              {transcript || interimTranscript}
+              {transcript}
             </p>
-            {interimTranscript && (
-              <div className="flex gap-1 mt-1">
-                <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
-            )}
           </motion.div>
         )}
-      </AnimatePresence>
 
-      <AnimatePresence>
         {error && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 
-                     bg-red-50 dark:bg-red-900/20 rounded-lg p-2 min-w-[200px]
-                     border border-red-200 dark:border-red-800"
+            className="absolute bottom-full mb-2 right-0 
+                     bg-red-50 dark:bg-red-900/20 rounded-lg p-3 min-w-[250px]
+                     border border-red-200 dark:border-red-800 z-50"
           >
-            <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+            <div className="flex items-start gap-2">
+              <svg className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                  Voice Recognition Error
+                </p>
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                  {error}
+                </p>
+                {error.includes('Network') && (
+                  <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+                    Chrome can't reach Google's speech servers. Try:
+                    <br />• Using Microsoft Edge instead
+                    <br />• Disabling VPN/firewall
+                    <br />• Using a different network
+                  </p>
+                )}
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
