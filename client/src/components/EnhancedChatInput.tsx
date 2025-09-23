@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import VoiceButton from './VoiceButton';
 
 interface EnhancedChatInputProps {
   onSendMessage: (message: string) => void;
@@ -24,12 +23,6 @@ export default function EnhancedChatInput({
   
   const value = externalValue !== undefined ? externalValue : internalValue;
   const onChange = externalOnChange || ((v: string) => setInternalValue(v));
-
-  const handleVoiceTranscript = (transcript: string) => {
-    const newValue = value + (value ? ' ' : '') + transcript;
-    onChange(newValue);
-    textareaRef.current?.focus();
-  };
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -100,11 +93,6 @@ export default function EnhancedChatInput({
         />
 
         <div className="flex items-end gap-2 p-2">
-          <VoiceButton
-            onTranscript={handleVoiceTranscript}
-            disabled={disabled}
-          />
-          
           <motion.button
             type="submit"
             disabled={disabled || !value.trim()}
